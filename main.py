@@ -1,7 +1,11 @@
 """
 MAIN SCRIPT
 
-This script is used to run individual scripts.
+This script is used to run the individual scripts.
 """
 
-# download the data
+######################################
+# Survey of Professional Forecasters #
+######################################
+
+# prepare the SPF DataFrames from the original file
