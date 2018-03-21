@@ -4,8 +4,42 @@ MAIN SCRIPT
 This script is used to run the individual scripts.
 """
 
+import pandas as pd
+import numpy as np
+from sklearn import linear_model
+
 ######################################
 # Survey of Professional Forecasters #
 ######################################
 
 # prepare the SPF DataFrames from the original file
+#
+# runfile('C:/Users/Marek/Desktop/IES/master_thesis_sc/spf_data_preparation.py',
+#        wdir='C:/Users/Marek/Desktop/IES/master_thesis_sc')
+
+# path to spf balanced DataFrames
+spf_bal_data_path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/SPF/Balanced_panels/"
+
+# save the prepared balanced DFs
+#
+# spf_bal_RGDP_1Y.to_pickle(spf_bal_data_path + "spf_bal_RGDP_1Y.pkl")
+# spf_bal_RGDP_2Y.to_pickle(spf_bal_data_path + "spf_bal_RGDP_2Y.pkl")
+# spf_bal_HICP_1Y.to_pickle(spf_bal_data_path + "spf_bal_HICP_1Y.pkl")
+# spf_bal_HICP_2Y.to_pickle(spf_bal_data_path + "spf_bal_HICP_2Y.pkl")
+# spf_bal_UNEM_1Y.to_pickle(spf_bal_data_path + "spf_bal_UNEM_1Y.pkl")
+# spf_bal_UNEM_2Y.to_pickle(spf_bal_data_path + "spf_bal_UNEM_2Y.pkl")
+
+# read the prepared balanced DFs
+spf_bal_RGDP_1Y = pd.read_pickle(spf_bal_data_path + "spf_bal_RGDP_1Y.pkl")
+spf_bal_RGDP_2Y = pd.read_pickle(spf_bal_data_path + "spf_bal_RGDP_2Y.pkl")
+spf_bal_HICP_1Y = pd.read_pickle(spf_bal_data_path + "spf_bal_HICP_1Y.pkl")
+spf_bal_HICP_2Y = pd.read_pickle(spf_bal_data_path + "spf_bal_HICP_2Y.pkl")
+spf_bal_UNEM_1Y = pd.read_pickle(spf_bal_data_path + "spf_bal_UNEM_1Y.pkl")
+spf_bal_UNEM_2Y = pd.read_pickle(spf_bal_data_path + "spf_bal_UNEM_2Y.pkl")
+
+
+
+
+
+
+# END OF FILE
