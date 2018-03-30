@@ -9,10 +9,12 @@ The first input should be a DataFrame with the training data of the following
 form: the first column contains the realized values, the other columns contain
 individual forecasts, the row index corresponds to time axis. The second input
 should be a DataFrame with the test data (i.e. all columns contain individual
-forecasts).
+forecasts). The remaining input should be parameters relevant for each
+respective method.
 
-The output is a Series containing combined forecasts (predictions) of length
- corresponding to the length of the supplied test DataFrame.
+The output is a DataFrame with one column containing combined forecasts
+(predictions) of length corresponding to the length of the supplied test
+DataFrame.
 
 """
 
@@ -31,6 +33,253 @@ def Equal_weights(df_test):
     df_pred = pd.DataFrame({"Equal Weights": np.mean(df_test, axis=1)})
 
     return df_pred
+
+
+def Bates_Granger_1(df_train, df_test, nu):
+    """
+    This method combines the individual forecasts linearly, using the length
+    of the training window nu.
+
+    Firstly, the vector of squared forecast errors is calculated for each
+    of the individual forecasts. Secondly, the vector of weights for prediction
+    is calculated based on the error vectors. Lastly, the weights are used to
+    combine forecasts and produce prediction for testing dataset.
+
+    """
+
+    # number of individual forecasts and number of periods
+    T = df_train.shape[0]
+
+    if nu > T:
+        raise ValueError('Parameter nu must be <= length of training sample')
+
+    # forecast errors
+    errors = df_train.iloc[:, 1:].subtract(df_train.iloc[:, 0], axis=0)
+    sq_errors = errors**2
+
+    # combining weights
+    nominator = 1 / sq_errors.iloc[sq_errors.shape[0]-nu:, :].sum(axis=0)
+    denominator = nominator.sum()
+    comb_w = nominator / denominator
+
+    # predictions
+    df_pred = pd.DataFrame({"Bates-Granger (1)": df_test.dot(comb_w)})
+
+    return df_pred
+
+
+def Bates_Granger_2(df_train, df_test, nu):
+    """
+    This method combines the individual forecasts linearly, using the length
+    of the training window nu.
+
+    Firstly, the vector of forecast errors is calculated for each
+    of the individual forecasts. Secondly, the estimate of the covariance
+    matrix sigma is calculated. Lastly, the weights are used to combine
+    forecasts and produce prediction for testing dataset. The weights lying
+    out of the [0,1] interval are replaced by the appropriate end points.
+
+    In order for covariance matrix sigma to be invertible, it is necesarry,
+    that the parameter nu is greater or equal to the number of forecast to
+    be combined.
+
+    """
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+    T = df_train.shape[0]
+
+    if nu > T:
+        raise ValueError('Parameter nu must be <= length of training sample')
+
+    # check whether there is enough observations, so sigma is invertible
+    if nu < K:
+        raise ValueError('Parameter nu must be >= no. of individual forecasts')
+
+    # forecast errors
+    errors = df_train.iloc[:, 1:].subtract(df_train.iloc[:, 0], axis=0)
+
+    # initialize the covariance matrix sigma
+    sigma = np.full((K, K), fill_value=0, dtype=float)
+
+    # fill the covariance matrix sigma
+    for i in range(K):
+
+        for j in range(K):
+
+            sigma[i, j] = np.dot(errors.iloc[errors.shape[0]-nu:, i],
+                                 errors.iloc[errors.shape[0]-nu:, j]) / nu
+
+    # combining weights
+    nominator = np.linalg.solve(sigma, np.full(K, fill_value=1))
+    denominator = np.dot(np.full(K, fill_value=1), nominator)
+    comb_w = nominator / denominator
+
+    # censoring the combining weights
+    for i in range(K):
+        if comb_w[i] < 0:
+            comb_w[i] = 0
+        if comb_w[i] > 1:
+            comb_w[i] = 1
+
+    # rescale the weights so that their sum equals 1
+    comb_w = comb_w/comb_w.sum()
+
+    # predictions
+    df_pred = pd.DataFrame({"Bates-Granger (2)": df_test.dot(comb_w)})
+
+    return df_pred
+
+
+def Bates_Granger_3(df_train, df_test, nu, alpha):
+    """
+
+    This method convexely combines the weights obtained from Bates-Granger
+    method (1) and the preceeding weights, assuming that omega_{i,1} = 1 / K
+    for all i. The combinations is determined by the parameter alpha.
+
+    """
+
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+    T = df_train.shape[0]
+
+    if nu > T:
+        raise ValueError('Parameter nu must be <= length of training sample')
+
+    if nu < K:
+        raise ValueError('Parameter nu must be >= no. of individual forecasts')
+
+    # matrix of combination weights (t = 1,...,T, T+1), T+1 is for the final c.
+    mat_comb_w = np.full((T+1, K), fill_value=0, dtype=float)
+
+    # initialize with equal weights
+    mat_comb_w[:nu, :] = np.full(K, fill_value=1 / K, dtype=float)
+
+    # roll over the training period and calculate the combining weights
+    for i in range(nu, T+1):
+
+        # compute the weights using Bates-Granger method 1
+        # forecast errors
+        errors = df_train.iloc[:i, 1:].subtract(df_train.iloc[:i, 0], axis=0)
+        sq_errors = errors**2
+
+        # combining weights
+        nominator = 1 / sq_errors.iloc[sq_errors.shape[0]-nu:, :].sum(axis=0)
+        denominator = nominator.sum()
+        method_1_comb_w = nominator / denominator
+
+        # calculate and store the combined combining weights
+        mat_comb_w[i, :] = alpha*mat_comb_w[i-1, :] + (1-alpha)*method_1_comb_w
+
+    # final combining weights (weights for period T+1 = index T)
+    comb_w = mat_comb_w[T, :]
+
+    # predictions
+    df_pred = pd.DataFrame({"Bates-Granger (3)": df_test.dot(comb_w)})
+
+    return df_pred
+
+
+def Bates_Granger_4(df_train, df_test, W):
+    """
+    This method combines the individual forecasts linearly, and uses the weight
+    parameter W to assign more weight to recent errors.
+
+    Firstly, the vector of squared forecast errors is calculated for each
+    of the individual forecasts. Secondly, the vector of weights for prediction
+    is calculated based on the error vectors. Lastly, the weights are used to
+    combine forecasts and produce prediction for testing dataset.
+
+    """
+
+    # number of individual forecasts
+    T = df_train.shape[0]
+
+    # forecast errors
+    errors = df_train.iloc[:, 1:].subtract(df_train.iloc[:, 0], axis=0)
+    sq_errors = errors**2
+
+    # exponential error weights
+    error_w = np.full(T, fill_value=W, dtype=float)**(np.arange(T)+1)
+
+    # combining weights
+    nominator = 1 / np.dot(error_w, sq_errors)
+    denominator = nominator.sum()
+    comb_w = nominator / denominator
+
+    # predictions
+    df_pred = pd.DataFrame({"Bates-Granger (4)": df_test.dot(comb_w)})
+
+    return df_pred
+
+
+def Bates_Granger_5(df_train, df_test, W):
+    """
+    This method resembles the second method, except that it uses the weight
+    parameter W to assign more weight to recent errors.
+
+    Firstly, the vector of forecast errors is calculated for each
+    of the individual forecasts. Secondly, the estimate of the covariance
+    matrix sigma is calculated. Lastly, the weights are used to combine
+    forecasts and produce prediction for testing dataset. The weights lying
+    out of the [0,1] interval are replaced by the appropriate end points.
+
+    In order for covariance matrix sigma to be invertible, it is necesarry,
+    that the length of the training sample is greater or equal to the number
+    of forecast to be combined.
+
+    """
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+    T = df_train.shape[0]
+
+    # check whether there is enough observations, so sigma is invertible
+    if K > T:
+        raise ValueError('No. forecasts must be <= length of training sample')
+
+    # forecast errors
+    errors = df_train.iloc[:, 1:].subtract(df_train.iloc[:, 0], axis=0)
+
+    # initialize the covariance matrix sigma
+    sigma = np.full((K, K), fill_value=0, dtype=float)
+
+    # exponential error weights
+    error_w = np.full(T, fill_value=W, dtype=float)**(np.arange(T)+1)
+    error_w_sum = error_w.sum()
+
+    # fill the covariance matrix sigma
+    for i in range(K):
+
+        for j in range(K):
+
+            # elements in sigma matrix are weighted with W
+            sigma[i, j] = np.dot(error_w*errors.iloc[:, i],
+                                 errors.iloc[:, j]) / error_w_sum
+
+    # combining weights
+    nominator = np.linalg.solve(sigma, np.full(K, fill_value=1))
+    denominator = np.dot(np.full(K, fill_value=1), nominator)
+    comb_w = nominator / denominator
+
+    # censoring the combining weights
+    for i in range(K):
+        if comb_w[i] < 0:
+            comb_w[i] = 0
+        if comb_w[i] > 1:
+            comb_w[i] = 1
+
+    # rescale the weights so that their sum equals 1
+    comb_w = comb_w/comb_w.sum()
+
+    # predictions
+    df_pred = pd.DataFrame({"Bates-Granger (5)": df_test.dot(comb_w)})
+
+    return df_pred
+
+
+
+
+
 
 
 # THE END OF MODULE
