@@ -27,12 +27,13 @@ W = 1.5
 
 # test analysis
 pred1 = cm.Equal_weights(df_test)
-pred2 = cm.Bates_Granger_1(df_train, df_test, nu=nu)
-pred3 = cm.Bates_Granger_2(df_train, df_test, nu=nu)
-pred4 = cm.Bates_Granger_3(df_train, df_test, nu=nu, alpha=alpha)
-pred5 = cm.Bates_Granger_4(df_train, df_test, W=W)
-pred6 = cm.Bates_Granger_5(df_train, df_test, W=W)
-    
-df_pred = pd.DataFrame({"Equal Weights": np.mean(df_test, axis=1)})
+pred = cm.Bates_Granger_1(df_train, df_test, nu=nu)
+pred = cm.Bates_Granger_2(df_train, df_test, nu=nu)
+pred = cm.Bates_Granger_3(df_train, df_test, nu=nu, alpha=alpha)
+pred = cm.Bates_Granger_4(df_train, df_test, W=W)
+pred = cm.Bates_Granger_5(df_train, df_test, W=W)
+pred = cm.Granger_Ramanathan_1(df_train, df_test)
+pred = cm.Granger_Ramanathan_2(df_train, df_test)
+pred = cm.Granger_Ramanathan_3(df_train, df_test)
 
 # END OF FILE

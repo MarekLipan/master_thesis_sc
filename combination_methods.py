@@ -20,6 +20,7 @@ DataFrame.
 
 import pandas as pd
 import numpy as np
+from sklearn import linear_model
 
 
 def Equal_weights(df_test):
@@ -277,9 +278,104 @@ def Bates_Granger_5(df_train, df_test, W):
     return df_pred
 
 
+def Granger_Ramanathan_1(df_train, df_test):
+    """
+    This method combines the individual forecasts linearly, and uses the weight
+    parameters estimated using OLS.
+
+    In the first method, the weights are estimated using unconstrained
+    regression without an intercept. The weights are then used to combine
+    forecasts and produce predictions for testing dataset.
+
+    """
+    # define y, F
+    y = df_train.iloc[:, 0]
+    F = df_train.iloc[:, 1:]
+
+    # create linear regression object
+    lin_reg = linear_model.LinearRegression(fit_intercept=False)
+
+    # fit the model
+    lin_reg.fit(F, y)
+
+    # compute the combining weights
+    beta_hat = lin_reg.coef_
+
+    # predictions
+    df_pred = pd.DataFrame({"Granger-Ramanathan (1)": df_test.dot(beta_hat)})
+
+    return df_pred
 
 
+def Granger_Ramanathan_2(df_train, df_test):
+    """
+    This method combines the individual forecasts linearly, and uses the weight
+    parameters estimated using OLS.
 
+    In the second method, the weights are estimated using contrained regression
+    (sum of coefficients equals one) without an intercept. As described in the
+    thesis I use the other, computationally equivalent way, of estimating the
+    weights. Firstly, I compute the y_star and F_star by subtracting the
+    last individual forecast. Secondly I estimate the beta_star and then I
+    compute the last weight as 1-beta_star. The weights are then used to
+    combine forecasts and produce predictions for testing dataset.
+
+    """
+
+    # number of individual forecasts
+    K = df_test.shape[1]
+
+    # define y_star, F_star
+    y_star = df_train.iloc[:, 0] - df_train.iloc[:, K]
+    F_star = df_train.iloc[:, 1:K].subtract(df_train.iloc[:, K], axis=0)
+
+    # create linear regression object
+    lin_reg = linear_model.LinearRegression(fit_intercept=False)
+
+    # fit the model
+    lin_reg.fit(F_star, y_star)
+
+    # compute the combining weights
+    beta_star_hat = lin_reg.coef_
+    beta_K = 1 - beta_star_hat.sum()
+    beta_hat = np.append(beta_star_hat, beta_K)
+
+    # predictions
+    df_pred = pd.DataFrame({"Granger-Ramanathan (2)": df_test.dot(beta_hat)})
+
+    return df_pred
+
+
+def Granger_Ramanathan_3(df_train, df_test):
+    """
+    This method combines the individual forecasts linearly, and uses the weight
+    parameters estimated using OLS.
+
+    In the third method, the weights are estimated using unconstrained
+    regression with an intercept. The weights and intercept are then used to
+    combine forecasts and produce predictions for testing dataset.
+
+    """
+
+    # define y, F
+    y = df_train.iloc[:, 0]
+    F = df_train.iloc[:, 1:]
+
+    # create linear regression object
+    lin_reg = linear_model.LinearRegression(fit_intercept=True)
+
+    # fit the model
+    lin_reg.fit(F, y)
+
+    # store the estimated beta and alpha
+    alpha_hat = lin_reg.intercept_
+    beta_hat = lin_reg.coef_
+
+    # predictions
+    df_pred = pd.DataFrame({"Granger-Ramanathan (3)":
+                            alpha_hat + df_test.dot(beta_hat)})
+
+    return df_pred
 
 
 # THE END OF MODULE
