@@ -2,7 +2,7 @@
 """
 COMBINATION METHODS module
 
-This module contains definitions forecast combinations methods, which are used
+This module contains definitions of forecast combinations methods, which are used
 to produce the combine forecasts.
 
 The first input should be a DataFrame with the training data of the following
