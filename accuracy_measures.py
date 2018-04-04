@@ -28,7 +28,6 @@ def RMSE(errors):
     -------
     RMSE : numpy.float64
         Root Mean Square Error
-
     """
 
     RMSE = np.sqrt(np.mean(errors**2))
@@ -50,7 +49,6 @@ def MAE(errors):
     -------
     MAE : numpy.float64
         Mean Absolute Error
-
     """
 
     MAE = np.mean(np.absolute(errors))
@@ -67,6 +65,9 @@ def MAPE(errors, y):
     The function comutes Mean Absolute Percentage Error (MAPE) for a given
     vector of errors.
 
+    Note: Observations equal to zero are disregarded, becasue division by zero
+    breaks down the computation.
+
     Parameters
     ----------
     errors : NumpyArray
@@ -79,8 +80,10 @@ def MAPE(errors, y):
     -------
     MAPE : numpy.float64
         Mean Absolute Percentage Error
-
     """
+
+    errors = errors[np.where(y != 0)]
+    y = y[np.where(y != 0)]
 
     percentage_errors = 100 * (errors / y)
 
