@@ -10,6 +10,7 @@ This script is used to perform the main analysis, i.e. train and test models.
 import pandas as pd
 import numpy as np
 import combination_methods as cm
+import forecast_tables as ft
 
 # define length of windows
 train_win_len = 30
@@ -40,57 +41,21 @@ pred1.to_latex()
 type(pred1.to_latex())
 
 
+basic_forecast_accuracy_table(df=spf_bal_RGDP_1Y, w=25)
+test = basic_forecast_accuracy_table(df=spf_bal_RGDP_1Y, w=25)
 
 
-# define a function for comparing forecast accuracy on a single series
-def basic_forecast_accuracy_table(df, w):
-    """
-    The function creates latex code of the table for basic forecast comparison.
 
-    The used measures of accuracy are Root Mean Square Error (RMSE), Mean
-    Absolute Error (MAE) and Mean Absolute Percentage Error (MAPE).
+# create accuracy tables
+acc_table_RGDP_1Y = ft.create_acc_table(
+        df=spf_bal_RGDP_1Y, w=25)
+
+# export accuracy tables to tex
+ft.gen_tex_table(tbl=acc_table_RGDP_1Y,
+                 cap="Real GDP - 1Y forecast horizon",
+                 file_name="spf_RGDP_1Y",
+                 r=3)
 
 
-    Parameters
-    ----------
-    df : DataFrame
-        DataFrame containing the  realized values in the first column and the
-        individual forecasts in the other columns
- 
-    w : Integer
-        Integer indicating the size of the training window.
- 
-
-    Returns
-    -------
-    String
-        String for creating the basic forecast accuracy table in latex
-
-    """
-
-    # number of individual forecasts and number of periods
-    K = df.shape[1]-1 # -1 for realized value in the first column
-    T = df.shape[0]
-    
-    # Accuracy measures
-    measures = np.array(["RMSE", "MAE", "MASE"])
-    M = measures.size
-    
-    # initialize forecast accuracy table
-    acc_table = pd.DataFrame(data=np.full((K, M), 0),
-                             columns=measures)
-    
-    
-
-    return acc_table.to_latex()
-
-df = spf_bal_RGDP_1Y
-
-acc_table = pd.DataFrame(np.random.random((2, 2)))
-acc_table.iloc[0, 0] = RMSE
-
-w = 30
-errors = np.full(w, 1)
-y = np.arange(w) + 1
 
 # END OF FILE
