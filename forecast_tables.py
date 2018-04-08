@@ -39,12 +39,7 @@ def create_acc_table(df, w):
         String for creating the basic forecast accuracy table in latex
     """
 
-    # define dimensions for number of forecast combination methods and periods
-    C = 9
-    T = df.shape[0]
-    oos_T = T - w  # no. one-step-ahead out of sample forecasts
-
-    # Forecast combination methods
+    # forecast combination methods
     comb_m = np.array(["Equal Weights",
                        "Bates-Granger (1)",
                        "Bates-Granger (2)",
@@ -53,10 +48,16 @@ def create_acc_table(df, w):
                        "Bates-Granger (5)",
                        "Granger-Ramanathan (1)",
                        "Granger-Ramanathan (2)",
-                       "Granger-Ramanathan (3)"
+                       "Granger-Ramanathan (3)",
+                       "AFTER"
                        ])
 
-    # Accuracy measures
+    # define dimensions for number of forecast combination methods and periods
+    C = comb_m.shape[0]
+    T = df.shape[0]
+    oos_T = T - w  # no. one-step-ahead out of sample forecasts
+
+    # accuracy measures
     measures = np.array(["RMSE", "MAE", "MAPE"])
     M = measures.size
 
@@ -88,7 +89,8 @@ def create_acc_table(df, w):
                 cm.Bates_Granger_5(df_train, df_test, W=1.5),
                 cm.Granger_Ramanathan_1(df_train, df_test),
                 cm.Granger_Ramanathan_2(df_train, df_test),
-                cm.Granger_Ramanathan_3(df_train, df_test)
+                cm.Granger_Ramanathan_3(df_train, df_test),
+                cm.AFTER(df_train, df_test, lambd=0.15)
                 ], axis=1).values[0]
 
     # compute and store accuracy measures

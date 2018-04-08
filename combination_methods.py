@@ -48,7 +48,7 @@ def Bates_Granger_1(df_train, df_test, nu):
 
     """
 
-    # number of individual forecasts and number of periods
+    # number of periods
     T = df_train.shape[0]
 
     if nu > T:
@@ -377,5 +377,31 @@ def Granger_Ramanathan_3(df_train, df_test):
 
     return df_pred
 
+
+def AFTER(df_train, df_test, lambd):
+    """
+    This method combines the individual forecasts linearly, using the tuning
+    parameter alpha.
+
+    Firstly, the vector of squared forecast errors is calculated for each
+    of the individual forecasts. Secondly, the vector of weights for prediction
+    is calculated based on the error vectors. Lastly, the weights are used to
+    combine forecasts and produce prediction for testing dataset.
+
+    """
+
+    # forecast errors
+    errors = df_train.iloc[:, 1:].subtract(df_train.iloc[:, 0], axis=0)
+    sq_errors = errors**2
+
+    # combining weights
+    nominator = np.exp((-lambd) * sq_errors.sum(axis=0))
+    denominator = nominator.sum()
+    comb_w = nominator / denominator
+
+    # predictions
+    df_pred = pd.DataFrame({"AFTER": df_test.dot(comb_w)})
+
+    return df_pred
 
 # THE END OF MODULE
