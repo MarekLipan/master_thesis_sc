@@ -30,6 +30,5 @@ df_test = spf_bal_RGDP_1Y.iloc[30:34, 1:]
 
 
 # parameters for development of new combining methods
-lambd = 0.1
 
 # END OF FILE

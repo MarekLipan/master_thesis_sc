@@ -49,7 +49,8 @@ def create_acc_table(df, w):
                        "Granger-Ramanathan (1)",
                        "Granger-Ramanathan (2)",
                        "Granger-Ramanathan (3)",
-                       "AFTER"
+                       "AFTER",
+                       "Median Forecast"
                        ])
 
     # define dimensions for number of forecast combination methods and periods
@@ -81,7 +82,7 @@ def create_acc_table(df, w):
 
         # combine and forecast
         fcts_table.iloc[:, i] = pd.concat([
-                cm.Equal_weights(df_test),
+                cm.Equal_Weights(df_test),
                 cm.Bates_Granger_1(df_train, df_test, nu=25),
                 cm.Bates_Granger_2(df_train, df_test, nu=25),
                 cm.Bates_Granger_3(df_train, df_test, nu=25, alpha=0.6),
@@ -90,7 +91,8 @@ def create_acc_table(df, w):
                 cm.Granger_Ramanathan_1(df_train, df_test),
                 cm.Granger_Ramanathan_2(df_train, df_test),
                 cm.Granger_Ramanathan_3(df_train, df_test),
-                cm.AFTER(df_train, df_test, lambd=0.15)
+                cm.AFTER(df_train, df_test, lambd=0.15),
+                cm.Median_Forecast(df_test)
                 ], axis=1).values[0]
 
     # compute and store accuracy measures
