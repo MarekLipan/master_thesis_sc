@@ -50,7 +50,8 @@ def create_acc_table(df, w):
                        "Granger-Ramanathan (2)",
                        "Granger-Ramanathan (3)",
                        "AFTER",
-                       "Median Forecast"
+                       "Median Forecast",
+                       "Trimmed Mean Forecast"
                        ])
 
     # define dimensions for number of forecast combination methods and periods
@@ -92,7 +93,8 @@ def create_acc_table(df, w):
                 cm.Granger_Ramanathan_2(df_train, df_test),
                 cm.Granger_Ramanathan_3(df_train, df_test),
                 cm.AFTER(df_train, df_test, lambd=0.15),
-                cm.Median_Forecast(df_test)
+                cm.Median_Forecast(df_test),
+                cm.Trimmed_Mean_Forecast(df_test, alpha=0.05)
                 ], axis=1).values[0]
 
     # compute and store accuracy measures

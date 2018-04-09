@@ -44,4 +44,11 @@ spf_bal_UNEM_2Y = pd.read_pickle(spf_bal_data_path + "spf_bal_UNEM_2Y.pkl")
 # runfile('C:/Users/Marek/Desktop/IES/master_thesis_sc/spf_analysis.py',
 #        wdir='C:/Users/Marek/Desktop/IES/master_thesis_sc')
 
+# dataframes for development of new combining methods
+df_train = spf_bal_RGDP_1Y.iloc[:30, :]
+df_test = spf_bal_RGDP_1Y.iloc[30:34, 1:]
+
+# parameters for development of new combining methods
+alpha = 0.05
+
 # END OF FILE

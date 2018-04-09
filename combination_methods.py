@@ -420,4 +420,30 @@ def Median_Forecast(df_test):
 
     return df_pred
 
+
+def Trimmed_Mean_Forecast(df_test, alpha):
+    """
+    For this combining method, no training set is actually necessary. The
+    predictions can obtained by as an alpha-trimmed mean from the forecasts
+    supplied for testing.
+
+    """
+
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+
+    # number values to be removed
+    r = np.floor(alpha*K).astype(int)
+
+    # trimmed testing set
+    df_test_trim = np.sort(df_test)[:, r:(K-r)]
+
+    # predictions
+    df_pred = pd.DataFrame(
+                {"Trimmed Mean Forecast": np.mean(df_test_trim, axis=1)},
+                index=df_test.index
+                )
+
+    return df_pred
+
 # THE END OF MODULE

@@ -21,14 +21,4 @@ ft.gen_tex_table(tbl=acc_table_RGDP_1Y,
                  file_name="spf_RGDP_1Y",
                  r=3)
 
-
-
-
-# dataframes for development of new combining methods
-df_train = spf_bal_RGDP_1Y.iloc[:30, :]
-df_test = spf_bal_RGDP_1Y.iloc[30:34, 1:]
-
-
-# parameters for development of new combining methods
-
 # END OF FILE
