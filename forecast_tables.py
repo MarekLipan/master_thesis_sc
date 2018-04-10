@@ -97,7 +97,7 @@ def create_acc_table(df, w):
                 cm.Trimmed_Mean_Forecast(df_test, alpha=0.05)
                 ], axis=1).values[0]
 
-    # compute and store accuracy measures
+    # compute and store accuracy measures for the combined forecasts
     for i in range(C):
 
         errors = real_val - fcts_table.iloc[i, :].values
@@ -107,6 +107,42 @@ def create_acc_table(df, w):
                 am.MAE(errors),
                 am.MAPE(errors, real_val)
                 ])
+
+    # add best and worsts individual metrics
+    ind_errors = np.array(df.iloc[w:, 1:].subtract(df.iloc[w:, 0], axis=0))
+    ind_index = np.array(["Best Individual", "Worst Individual"])
+    ind_acc_table = pd.DataFrame(data=np.array(
+                                        [np.full(M, 1000000, dtype=float),
+                                         np.full(M, 0, dtype=float)]),
+                                 columns=measures, index=ind_index)
+
+    for i in range(ind_errors.shape[1]):
+
+        ind_RMSE = am.RMSE(ind_errors[:, i])
+        ind_MAE = am.MAE(ind_errors[:, i])
+        ind_MAPE = am.MAPE(ind_errors[:, i], real_val)
+
+        # find the best and worst individual metrics
+        if ind_acc_table.loc["Best Individual", "RMSE"] > ind_RMSE:
+            ind_acc_table.loc["Best Individual", "RMSE"] = ind_RMSE
+
+        if ind_acc_table.loc["Best Individual", "MAE"] > ind_MAE:
+            ind_acc_table.loc["Best Individual", "MAE"] = ind_MAE
+
+        if ind_acc_table.loc["Best Individual", "MAPE"] > ind_MAPE:
+            ind_acc_table.loc["Best Individual", "MAPE"] = ind_MAPE
+
+        if ind_acc_table.loc["Worst Individual", "RMSE"] < ind_RMSE:
+            ind_acc_table.loc["Worst Individual", "RMSE"] = ind_RMSE
+
+        if ind_acc_table.loc["Worst Individual", "MAE"] < ind_MAE:
+            ind_acc_table.loc["Worst Individual", "MAE"] = ind_MAE
+
+        if ind_acc_table.loc["Worst Individual", "MAPE"] < ind_MAPE:
+            ind_acc_table.loc["Worst Individual", "MAPE"] = ind_MAPE
+
+    # complete the accuracy table
+    acc_table = acc_table.append(ind_acc_table)
 
     return acc_table
 
@@ -145,15 +181,24 @@ def gen_tex_table(tbl, cap, file_name, r):
     tabr.add_row(["Forecast Combination Method"] + list(tbl))
     tabr.add_hline()
 
-    # number of combination methods
-    C = tbl.shape[0]
+    # number of combination methods + additional rows
+    R = tbl.shape[0]
 
     # fill in the rows for each combination method
-    for i in range(C):
+    for i in range(R-2):
 
         tabr.add_row([tbl.index[i]] + list(np.around(tbl.iloc[i, :],
                      decimals=r)))
 
+    tabr.add_hline()
+
+    # additional rows
+    for i in range(R-2, R):
+
+        tabr.add_row([tbl.index[i]] + list(np.around(tbl.iloc[i, :],
+                     decimals=r)))
+
+    # end of table
     tabr.add_hline()
     tabr.add_hline()
 

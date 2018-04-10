@@ -48,7 +48,9 @@ spf_bal_UNEM_2Y = pd.read_pickle(spf_bal_data_path + "spf_bal_UNEM_2Y.pkl")
 df_train = spf_bal_RGDP_1Y.iloc[:30, :]
 df_test = spf_bal_RGDP_1Y.iloc[30:34, 1:]
 
+df = spf_bal_RGDP_1Y
+w= 25
+
 # parameters for development of new combining methods
-alpha = 0.05
 
 # END OF FILE
