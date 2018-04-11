@@ -446,4 +446,33 @@ def Trimmed_Mean_Forecast(df_test, alpha):
 
     return df_pred
 
+
+def PEW(df_train, df_test):
+    """
+    The projection on the equall weights: regress the variable to be forecast
+    on the average of individual forecasts (with intercept).
+
+    """
+
+    # define y, f_bar
+    y = df_train.iloc[:, 0]
+    f_bar = np.mean(df_train.iloc[:, 1:], axis=1).values.reshape(-1, 1)
+
+    # create linear regression object
+    lin_reg = linear_model.LinearRegression(fit_intercept=True)
+
+    # fit the model
+    lin_reg.fit(f_bar, y)
+
+    # store the estimated beta and alpha
+    alpha_hat = lin_reg.intercept_
+    beta_hat = lin_reg.coef_
+
+    # predictions
+    df_pred = pd.DataFrame({"PEW":
+                            alpha_hat + beta_hat*np.mean(df_test, axis=1)})
+
+    return df_pred
+
+
 # THE END OF MODULE

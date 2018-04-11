@@ -51,7 +51,8 @@ def create_acc_table(df, w):
                        "Granger-Ramanathan (3)",
                        "AFTER",
                        "Median Forecast",
-                       "Trimmed Mean Forecast"
+                       "Trimmed Mean Forecast",
+                       "PEW"
                        ])
 
     # define dimensions for number of forecast combination methods and periods
@@ -84,9 +85,9 @@ def create_acc_table(df, w):
         # combine and forecast
         fcts_table.iloc[:, i] = pd.concat([
                 cm.Equal_Weights(df_test),
-                cm.Bates_Granger_1(df_train, df_test, nu=25),
-                cm.Bates_Granger_2(df_train, df_test, nu=25),
-                cm.Bates_Granger_3(df_train, df_test, nu=25, alpha=0.6),
+                cm.Bates_Granger_1(df_train, df_test, nu=30),
+                cm.Bates_Granger_2(df_train, df_test, nu=30),
+                cm.Bates_Granger_3(df_train, df_test, nu=30, alpha=0.6),
                 cm.Bates_Granger_4(df_train, df_test, W=1.5),
                 cm.Bates_Granger_5(df_train, df_test, W=1.5),
                 cm.Granger_Ramanathan_1(df_train, df_test),
@@ -94,7 +95,8 @@ def create_acc_table(df, w):
                 cm.Granger_Ramanathan_3(df_train, df_test),
                 cm.AFTER(df_train, df_test, lambd=0.15),
                 cm.Median_Forecast(df_test),
-                cm.Trimmed_Mean_Forecast(df_test, alpha=0.05)
+                cm.Trimmed_Mean_Forecast(df_test, alpha=0.05),
+                cm.PEW(df_train, df_test)
                 ], axis=1).values[0]
 
     # compute and store accuracy measures for the combined forecasts
