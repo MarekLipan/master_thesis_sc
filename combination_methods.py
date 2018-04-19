@@ -21,6 +21,7 @@ DataFrame.
 import pandas as pd
 import numpy as np
 from sklearn import linear_model
+from sklearn.decomposition import PCA
 
 
 def Equal_Weights(df_test):
@@ -471,6 +472,142 @@ def PEW(df_train, df_test):
     # predictions
     df_pred = pd.DataFrame({"PEW":
                             alpha_hat + beta_hat*np.mean(df_test, axis=1)})
+
+    return df_pred
+
+
+def Principal_Component_Forecast(df_train, df_test, prcomp):
+    """
+    The principal component (factor analytic) combination method. The number
+    of used components depends on the parameter "prcomp" = {single, AIC, BIC}
+
+    """
+
+    # number of periods
+    T = df_train.shape[0]
+
+    # compute second moment matrix of forecasts
+    sec_mom_mat = np.dot(np.transpose(df_train.iloc[:, 1:]),
+                         df_train.iloc[:, 1:])
+
+    if (prcomp == "single"):
+
+        # estimate the common factor mu using principal components
+        pca = PCA(n_components=1).fit(sec_mom_mat)
+        lambda_hat = np.transpose(pca.components_)
+        mu_hat = np.dot(df_train.iloc[:, 1:], lambda_hat)
+
+        # define y
+        y = df_train.iloc[:, 0]
+
+        # create linear regression object
+        lin_reg = linear_model.LinearRegression(fit_intercept=False)
+
+        # fit the model
+        lin_reg.fit(mu_hat, y)
+
+        # store the estimated beta
+        beta_hat = lin_reg.coef_
+
+        # predictions
+        df_pred = pd.DataFrame(
+                {"Principal Component Forecast":
+                    np.dot(np.dot(df_test, lambda_hat), beta_hat)},
+                index=df_test.index)
+
+    if (prcomp == "AIC"):
+
+        # initialize final beta coefficients and AIC
+        final_beta_hat = np.nan
+        final_lambda_hat = np.nan
+        final_AIC = 1000000000
+
+        for i in range(4):
+            # number of principal components, +1 for python
+            prcomp_no = i + 1
+
+            # estimate the common factor mu using principal components
+            pca = PCA(n_components=prcomp_no).fit(sec_mom_mat)
+            lambda_hat = np.transpose(pca.components_)
+            mu_hat = np.dot(df_train.iloc[:, 1:], lambda_hat)
+
+            # define y
+            y = df_train.iloc[:, 0]
+
+            # create linear regression object
+            lin_reg = linear_model.LinearRegression(fit_intercept=False)
+
+            # fit the model
+            lin_reg.fit(mu_hat, y)
+
+            # store the estimated beta
+            beta_hat = lin_reg.coef_
+
+            # AIC calculation
+            res = y - np.dot(mu_hat, beta_hat)
+            res_sq = res**2
+            sigma_sq = sum(res_sq)/T
+            P = prcomp_no + 1  # total number of parameters, including sigma
+            AIC = T*np.log(sigma_sq) + 2*P
+
+            # change final beta and AIC, if there is improvement in AIC
+            if AIC < final_AIC:
+                final_AIC = AIC
+                final_beta_hat = beta_hat
+                final_lambda_hat = lambda_hat
+
+        # predictions
+        df_pred = pd.DataFrame(
+                {"Principal Component Forecast (AIC)":
+                    np.dot(np.dot(df_test, final_lambda_hat), final_beta_hat)},
+                index=df_test.index)
+
+    if (prcomp == "BIC"):
+
+        # initialize final beta coefficients, eigenvectors and BIC
+        final_beta_hat = np.nan
+        final_lambda_hat = np.nan
+        final_BIC = 1000000000
+
+        for i in range(4):
+            # number of principal components, +1 for python
+            prcomp_no = i + 1
+
+            # estimate the common factor mu using principal components
+            pca = PCA(n_components=prcomp_no).fit(sec_mom_mat)
+            lambda_hat = np.transpose(pca.components_)
+            mu_hat = np.dot(df_train.iloc[:, 1:], lambda_hat)
+
+            # define y
+            y = df_train.iloc[:, 0]
+
+            # create linear regression object
+            lin_reg = linear_model.LinearRegression(fit_intercept=False)
+
+            # fit the model
+            lin_reg.fit(mu_hat, y)
+
+            # store the estimated beta
+            beta_hat = lin_reg.coef_
+
+            # BIC calculation
+            res = y - np.dot(mu_hat, beta_hat)
+            res_sq = res**2
+            sigma_sq = sum(res_sq)/T
+            P = prcomp_no + 1  # total number of parameters, including sigma
+            BIC = T*np.log(sigma_sq) + P*np.log(T)
+
+            # change the final coefficients, if there is improvement in BIC
+            if BIC < final_BIC:
+                final_BIC = BIC
+                final_beta_hat = beta_hat
+                final_lambda_hat = lambda_hat
+
+        # predictions
+        df_pred = pd.DataFrame(
+                {"Principal Component Forecast (BIC)":
+                    np.dot(np.dot(df_test, final_lambda_hat), final_beta_hat)},
+                index=df_test.index)
 
     return df_pred
 
