@@ -265,7 +265,7 @@ def create_balanced_df(df):
                 df.iloc[i, j] = float(
                         mean_forecast[i] + beta*dev_from_mean[first_obs_pos])
 
-    return pd.DataFrame(df)
+    return pd.DataFrame(df, dtype=float)
 
 
 # real GDP 1Y horizon
