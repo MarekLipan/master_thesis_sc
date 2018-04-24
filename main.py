@@ -49,7 +49,7 @@ df_train = spf_bal_RGDP_1Y.iloc[:30, :]
 df_test = spf_bal_RGDP_1Y.iloc[30:34, 1:]
 
 df = spf_bal_RGDP_1Y
-w= 25
+w= 30
 
 # parameters for development of new combining methods
 

@@ -23,6 +23,11 @@ import numpy as np
 from sklearn import linear_model
 from sklearn.decomposition import PCA
 
+"""
+SIMPLE METHODS
+
+"""
+
 
 def Equal_Weights(df_test):
     """
@@ -430,7 +435,7 @@ def Trimmed_Mean_Forecast(df_test, alpha):
 
     """
 
-    # number of individual forecasts and number of periods
+    # number of individual forecasts
     K = df_test.shape[1]
 
     # number values to be removed
@@ -474,6 +479,12 @@ def PEW(df_train, df_test):
                             alpha_hat + beta_hat*np.mean(df_test, axis=1)})
 
     return df_pred
+
+
+"""
+FACTOR ANALYTIC METHODS
+
+"""
 
 
 def Principal_Component_Forecast(df_train, df_test, prcomp):
@@ -520,7 +531,7 @@ def Principal_Component_Forecast(df_train, df_test, prcomp):
         # initialize final beta coefficients and AIC
         final_beta_hat = np.nan
         final_lambda_hat = np.nan
-        final_AIC = 1000000000
+        final_AIC = np.inf
 
         for i in range(4):
             # number of principal components, +1 for python
@@ -567,7 +578,7 @@ def Principal_Component_Forecast(df_train, df_test, prcomp):
         # initialize final beta coefficients, eigenvectors and BIC
         final_beta_hat = np.nan
         final_lambda_hat = np.nan
-        final_BIC = 1000000000
+        final_BIC = np.inf
 
         for i in range(4):
             # number of principal components, +1 for python
@@ -608,6 +619,61 @@ def Principal_Component_Forecast(df_train, df_test, prcomp):
                 {"Principal Component Forecast (BIC)":
                     np.dot(np.dot(df_test, final_lambda_hat), final_beta_hat)},
                 index=df_test.index)
+
+    return df_pred
+
+
+"""
+SHRINKING METHODS
+
+"""
+
+
+def Empirical_Bayes_Estimator(df_train, df_test):
+    """
+    The empirical bayes estimator of combining weights. Bayesian linear
+    regression model with the prior specified in Diebold & Pauli (1990).
+
+    """
+
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+    T = df_train.shape[0]
+
+    # define the prior weights (simple average, with intercept equal zero)
+    beta_0 = np.append(np.array(0), np.full(K, fill_value=1/K, dtype=float))
+
+    # design matrix (intercept + individual forecasts)
+    F = df_train.iloc[:, 1:].values
+    F = np.insert(F, 0, 1, axis=1)
+
+    # define y (observed values)
+    y = df_train.iloc[:, 0].values
+
+    # OLS weights
+    beta_hat = np.dot(np.linalg.inv(np.dot(np.transpose(F), F)),
+                      np.dot(np.transpose(F), y))
+
+    # sigma
+    sigma_hat_sq = np.dot(
+            np.transpose(y - np.dot(F, beta_hat)),
+            y - np.dot(F, beta_hat)
+            ) / T
+
+    # tau
+    num = np.dot(np.transpose(beta_hat - beta_0), beta_hat - beta_0)
+    denum = np.trace(np.linalg.inv(np.dot(np.transpose(F), F)))
+    tau_hat_sq = num / denum - sigma_hat_sq
+
+    # combining weights
+    shrinkage = 1 - sigma_hat_sq / (sigma_hat_sq + tau_hat_sq)
+    beta_1_hat = beta_0 + shrinkage*(beta_hat - beta_0)
+
+    # predictions
+    df_pred = pd.DataFrame(
+            {"Empirical Bayes Estimator":
+                beta_1_hat[0] + np.dot(df_test, beta_1_hat[1:])},
+            index=df_test.index)
 
     return df_pred
 

@@ -55,7 +55,8 @@ def create_acc_table(df, w):
                        "PEW",
                        "Principal Component Forecast",
                        "Principal Component Forecast (AIC)",
-                       "Principal Component Forecast (BIC)"
+                       "Principal Component Forecast (BIC)",
+                       "Empirical Bayes Estimator"
                        ])
 
     # define dimensions for number of forecast combination methods and periods
@@ -102,7 +103,8 @@ def create_acc_table(df, w):
                 cm.PEW(df_train, df_test),
                 cm.Principal_Component_Forecast(df_train, df_test, "single"),
                 cm.Principal_Component_Forecast(df_train, df_test, "AIC"),
-                cm.Principal_Component_Forecast(df_train, df_test, "BIC")
+                cm.Principal_Component_Forecast(df_train, df_test, "BIC"),
+                cm.Empirical_Bayes_Estimator(df_train, df_test)
                 ], axis=1).values[0]
 
     # compute and store accuracy measures for the combined forecasts
@@ -120,7 +122,7 @@ def create_acc_table(df, w):
     ind_errors = np.array(df.iloc[w:, 1:].subtract(df.iloc[w:, 0], axis=0))
     ind_index = np.array(["Best Individual", "Worst Individual"])
     ind_acc_table = pd.DataFrame(data=np.array(
-                                        [np.full(M, 1000000, dtype=float),
+                                        [np.full(M, np.inf, dtype=float),
                                          np.full(M, 0, dtype=float)]),
                                  columns=measures, index=ind_index)
 
