@@ -678,4 +678,40 @@ def Empirical_Bayes_Estimator(df_train, df_test):
     return df_pred
 
 
+def Kappa_Shrinkage(df_train, df_test, kappa):
+    """
+    Shrinkage of the combining weights from OLS without intercept towards
+    the equal weights. The amount of shrinkage is driven by parameter kappa.
+
+    """
+
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+    T = df_train.shape[0]
+
+    # define the prior weights (simple average, with intercept equal zero)
+    beta_0 = np.full(K, fill_value=1/K, dtype=float)
+
+    # design matrix (intercept + individual forecasts)
+    F = df_train.iloc[:, 1:].values
+
+    # define y (observed values)
+    y = df_train.iloc[:, 0].values
+
+    # OLS weights (without an intercept)
+    beta_hat = np.dot(np.linalg.inv(np.dot(np.transpose(F), F)),
+                      np.dot(np.transpose(F), y))
+
+    # shrinkage weight
+    lambd = max([0, 1 - kappa * (K / (T - 1 - K))])
+
+    # combining weights
+    comb_w = lambd*beta_hat + (1-lambd)*beta_0
+
+    # predictions
+    df_pred = pd.DataFrame({"Kappa-Shrinkage": df_test.dot(comb_w)})
+
+    return df_pred
+
+
 # THE END OF MODULE

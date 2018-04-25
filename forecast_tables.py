@@ -56,7 +56,8 @@ def create_acc_table(df, w):
                        "Principal Component Forecast",
                        "Principal Component Forecast (AIC)",
                        "Principal Component Forecast (BIC)",
-                       "Empirical Bayes Estimator"
+                       "Empirical Bayes Estimator",
+                       "Kappa-Shrinkage"
                        ])
 
     # define dimensions for number of forecast combination methods and periods
@@ -89,9 +90,9 @@ def create_acc_table(df, w):
         # combine and forecast
         fcts_table.iloc[:, i] = pd.concat([
                 cm.Equal_Weights(df_test),
-                cm.Bates_Granger_1(df_train, df_test, nu=30),
-                cm.Bates_Granger_2(df_train, df_test, nu=30),
-                cm.Bates_Granger_3(df_train, df_test, nu=30, alpha=0.6),
+                cm.Bates_Granger_1(df_train, df_test, nu=40),
+                cm.Bates_Granger_2(df_train, df_test, nu=40),
+                cm.Bates_Granger_3(df_train, df_test, nu=40, alpha=0.6),
                 cm.Bates_Granger_4(df_train, df_test, W=1.5),
                 cm.Bates_Granger_5(df_train, df_test, W=1.5),
                 cm.Granger_Ramanathan_1(df_train, df_test),
@@ -104,7 +105,8 @@ def create_acc_table(df, w):
                 cm.Principal_Component_Forecast(df_train, df_test, "single"),
                 cm.Principal_Component_Forecast(df_train, df_test, "AIC"),
                 cm.Principal_Component_Forecast(df_train, df_test, "BIC"),
-                cm.Empirical_Bayes_Estimator(df_train, df_test)
+                cm.Empirical_Bayes_Estimator(df_train, df_test),
+                cm.Kappa_Shrinkage(df_train, df_test, kappa=0.5)
                 ], axis=1).values[0]
 
     # compute and store accuracy measures for the combined forecasts

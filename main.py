@@ -45,12 +45,13 @@ spf_bal_UNEM_2Y = pd.read_pickle(spf_bal_data_path + "spf_bal_UNEM_2Y.pkl")
 #        wdir='C:/Users/Marek/Desktop/IES/master_thesis_sc')
 
 # dataframes for development of new combining methods
-df_train = spf_bal_RGDP_1Y.iloc[:30, :]
-df_test = spf_bal_RGDP_1Y.iloc[30:34, 1:]
+df_train = spf_bal_RGDP_1Y.iloc[:40, :]
+df_test = spf_bal_RGDP_1Y.iloc[40:44, 1:]
 
 df = spf_bal_RGDP_1Y
-w= 30
+w= 40
 
 # parameters for development of new combining methods
+kappa = 0.5
 
 # END OF FILE
