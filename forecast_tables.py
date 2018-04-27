@@ -60,10 +60,11 @@ def create_acc_table(df, w):
                        "Kappa-Shrinkage"
                        ])
 
-    # define dimensions for number of forecast combination methods and periods
+    # define dimensions
     C = comb_m.shape[0]
     T = df.shape[0]
     oos_T = T - w  # no. one-step-ahead out of sample forecasts
+    K = df.shape[1] - 1  # number of individual forecasts
 
     # accuracy measures
     measures = np.array(["RMSE", "MAE", "MAPE"])
@@ -122,36 +123,41 @@ def create_acc_table(df, w):
 
     # add best and worsts individual metrics
     ind_errors = np.array(df.iloc[w:, 1:].subtract(df.iloc[w:, 0], axis=0))
-    ind_index = np.array(["Best Individual", "Worst Individual"])
-    ind_acc_table = pd.DataFrame(data=np.array(
-                                        [np.full(M, np.inf, dtype=float),
-                                         np.full(M, 0, dtype=float)]),
-                                 columns=measures, index=ind_index)
+    ind_index = np.array(["Best Individual",
+                          "Median Individual",
+                          "Worst Individual"])
+    ind_acc_table = pd.DataFrame(
+            data=np.full((ind_index.size, M), np.nan, dtype=float),
+            columns=measures,
+            index=ind_index
+            )
 
-    for i in range(ind_errors.shape[1]):
+    # initialize vector to store calculated measures for individual forecasts
+    ind_measure = np.full(K, np.nan, dtype=float)
 
-        ind_RMSE = am.RMSE(ind_errors[:, i])
-        ind_MAE = am.MAE(ind_errors[:, i])
-        ind_MAPE = am.MAPE(ind_errors[:, i], real_val)
+    # RMSE
+    for i in range(K):
+        ind_measure[i] = am.RMSE(ind_errors[:, i])
 
-        # find the best and worst individual metrics
-        if ind_acc_table.loc["Best Individual", "RMSE"] > ind_RMSE:
-            ind_acc_table.loc["Best Individual", "RMSE"] = ind_RMSE
+    ind_acc_table.loc["Best Individual", "RMSE"] = min(ind_measure)
+    ind_acc_table.loc["Median Individual", "RMSE"] = np.median(ind_measure)
+    ind_acc_table.loc["Worst Individual", "RMSE"] = max(ind_measure)
 
-        if ind_acc_table.loc["Best Individual", "MAE"] > ind_MAE:
-            ind_acc_table.loc["Best Individual", "MAE"] = ind_MAE
+    # MAE
+    for i in range(K):
+        ind_measure[i] = am.MAE(ind_errors[:, i])
 
-        if ind_acc_table.loc["Best Individual", "MAPE"] > ind_MAPE:
-            ind_acc_table.loc["Best Individual", "MAPE"] = ind_MAPE
+    ind_acc_table.loc["Best Individual", "MAE"] = min(ind_measure)
+    ind_acc_table.loc["Median Individual", "MAE"] = np.median(ind_measure)
+    ind_acc_table.loc["Worst Individual", "MAE"] = max(ind_measure)
 
-        if ind_acc_table.loc["Worst Individual", "RMSE"] < ind_RMSE:
-            ind_acc_table.loc["Worst Individual", "RMSE"] = ind_RMSE
+    # MAPE
+    for i in range(K):
+        ind_measure[i] = am.MAPE(ind_errors[:, i], real_val)
 
-        if ind_acc_table.loc["Worst Individual", "MAE"] < ind_MAE:
-            ind_acc_table.loc["Worst Individual", "MAE"] = ind_MAE
-
-        if ind_acc_table.loc["Worst Individual", "MAPE"] < ind_MAPE:
-            ind_acc_table.loc["Worst Individual", "MAPE"] = ind_MAPE
+    ind_acc_table.loc["Best Individual", "MAPE"] = min(ind_measure)
+    ind_acc_table.loc["Median Individual", "MAPE"] = np.median(ind_measure)
+    ind_acc_table.loc["Worst Individual", "MAPE"] = max(ind_measure)
 
     # complete the accuracy table
     acc_table = acc_table.append(ind_acc_table)
@@ -196,8 +202,8 @@ def gen_tex_table(tbl, cap, file_name, r):
     # number of combination methods + additional rows
     R = tbl.shape[0]
 
-    # fill in the rows for each combination method
-    for i in range(R-2):
+    # fill in the rows for each combination method (-3 for individuals)
+    for i in range(R-3):
 
         tabr.add_row([tbl.index[i]] + list(np.around(tbl.iloc[i, :],
                      decimals=r)))
@@ -205,7 +211,7 @@ def gen_tex_table(tbl, cap, file_name, r):
     tabr.add_hline()
 
     # additional rows
-    for i in range(R-2, R):
+    for i in range(R-3, R):
 
         tabr.add_row([tbl.index[i]] + list(np.around(tbl.iloc[i, :],
                      decimals=r)))
