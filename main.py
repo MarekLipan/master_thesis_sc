@@ -6,6 +6,7 @@ This script is used to run the individual scripts.
 """
 
 import pandas as pd
+import numpy as np
 
 # global paths
 data_path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
@@ -52,6 +53,14 @@ df = spf_bal_RGDP_1Y
 w= 40
 
 # parameters for development of new combining methods
-kappa = 0.5
+lambda_1 = 0.05
+lambda_2 = 0.05
+
+lambda_1 = np.exp(-6)
+lambda_2 = np.exp(-6)
+
+k_cv = 5
+
+lambda_pair = [0.5, 0.5]
 
 # END OF FILE

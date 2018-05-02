@@ -714,4 +714,154 @@ def Kappa_Shrinkage(df_train, df_test, kappa):
     return df_pred
 
 
+def LASSO_coef(df_train, lambda_1):
+    """
+    Refer down to 2-step Egalitarian LASSO.
+
+    """
+
+    # define y, X
+    y = df_train.iloc[:, 0]
+    X = df_train.iloc[:, 1:]
+
+    # estimate LASSO
+    lasso = linear_model.Lasso(alpha=lambda_1,
+                               fit_intercept=False,
+                               max_iter=100000).fit(X, y)
+
+    # which forecasters to keep
+    return np.append(True, lasso.coef_ != 0)  # 1s True for y
+
+
+def Egalitarian_LASSO(df_train, lambda_2):
+    """
+    Refer down to 2-step Egalitarian LASSO.
+
+    """
+
+    # definitions
+    y = df_train.iloc[:, 0]
+    X = df_train.iloc[:, 1:]
+    f_bar = np.mean(X, axis=1)
+    K = X.shape[1]
+
+    # estimate Egalitarian LASSO via the transformation to LASSO
+    egal_lasso = linear_model.Lasso(alpha=lambda_2,
+                                    fit_intercept=False,
+                                    max_iter=100000)
+
+    beta = egal_lasso.fit(X, y-f_bar).coef_ + 1/K
+
+    return beta
+
+
+def Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv):
+    """
+    The 2-step Egalitarian LASSO procedures. Firstly, we need to define
+    the LASSO function as a first step and Egalitarian LASSO function as
+    a second step. Then the grid of 200 potential values of the shrinkage
+    parameters and finally. Then the optimal pair of lambdas is searched for
+    using leave-one-out cross validation and finally, the combining weights
+    are computed using both steps with the optimal pair of lambdas.
+
+    In order to reduce computation intensity, only k-fold cross-validation is
+    used.
+
+    """
+
+    # grid for the pair of shrinkage parameters
+    lambda_grid = np.exp(np.linspace(-6, 2, num=20))
+
+    lambda_mat = pd.DataFrame(
+            0,
+            dtype=float,
+            index=lambda_grid,
+            columns=lambda_grid)
+
+    # length of cross-validation subset
+    k_len = int(df_train.shape[0] / k_cv)
+
+    # for t in range(T):
+    for k in range(k_cv):
+
+        df_train_rd = df_train.loc[
+                ~df_train.index.isin(df_train.index[k:(k+k_len)]), :]
+
+        # matrix of selected forecasters (dropping duplicate results)
+        sel_forecast_mat = pd.DataFrame(np.nan,
+                                        dtype=bool,
+                                        index=lambda_grid,
+                                        columns=df_train.columns)
+
+        for i in range(lambda_grid.size):
+            sel_forecast_mat.loc[lambda_grid[i], :] = LASSO_coef(
+                                                        df_train_rd,
+                                                        lambda_grid[i]
+                                                        )
+
+        # sel_forecast_mat = sel_forecast_mat.drop_duplicates()
+
+        # atleast one selected forecaster
+        # sel_forecast_mat = sel_forecast_mat.loc[
+        #         np.sum(sel_forecast_mat, axis=1) > 1, :]
+
+        # target
+        real_val = df_train.iloc[k:(k+k_len), 0]
+
+        # optimize lambda 2
+        for i in range(sel_forecast_mat.shape[0]):
+
+            for j in range(lambda_grid.size):
+                # obtain coefficients
+                if np.sum(sel_forecast_mat, axis=1).iloc[i] > 1:
+                    beta = Egalitarian_LASSO(
+                            df_train_rd.loc[:, sel_forecast_mat.iloc[i, :]],
+                            lambda_grid[j]
+                            )
+
+                    # update MSE
+                    cv_test_df = df_train.loc[
+                                    df_train.index[k:(k+k_len)],
+                                    sel_forecast_mat.iloc[i, :]
+                                    ]
+                    prediction = np.dot(cv_test_df.iloc[:, 1:], beta)
+
+                    # reshape necesarry if multiplying by 1 forecaster
+                    if np.sum(sel_forecast_mat, axis=1).iloc[i] == 2:
+
+                        lambda_mat.iloc[i, j] += sum(
+                            (real_val.values.reshape(-1, 1) - prediction)**2
+                            ) / k_len
+                    else:
+                        lambda_mat.iloc[i, j] += sum(
+                            (real_val - prediction)**2
+                            ) / k_len
+                else:
+                    lambda_mat.iloc[i, j] = np.inf
+
+        # optimal lambda (multiple minima may occur when shrunk to equal w.)
+        lamda_mat_tf = (lambda_mat == np.min(lambda_mat.values))
+        lamda_star_1 = lamda_mat_tf.sum(axis=1)[
+                lamda_mat_tf.sum(axis=1) > 0].index.values[0]
+        lamda_star_2 = lamda_mat_tf.sum(axis=0)[
+                lamda_mat_tf.sum(axis=0) > 0].index.values[0]
+
+        # estimation with optimal lambda
+        df_coef = LASSO_coef(df_train, lamda_star_1)
+        beta = Egalitarian_LASSO(df_train.loc[:, df_coef], lamda_star_2)
+
+        # predictions
+        df_test_rd = df_test.loc[:, df_coef[1:]]
+
+        if beta.size == 1:
+            final_pred = df_test_rd * beta
+        else:
+            final_pred = df_test_rd.dot(beta)
+
+        df_pred = pd.DataFrame({"Two-Step Egalitarian LASSO": final_pred},
+                               index=df_test_rd.index)
+
+    return df_pred
+
+
 # THE END OF MODULE

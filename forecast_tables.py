@@ -57,7 +57,8 @@ def create_acc_table(df, w):
                        "Principal Component Forecast (AIC)",
                        "Principal Component Forecast (BIC)",
                        "Empirical Bayes Estimator",
-                       "Kappa-Shrinkage"
+                       "Kappa-Shrinkage",
+                       "Two-Step Egalitarian LASSO"
                        ])
 
     # define dimensions
@@ -107,7 +108,8 @@ def create_acc_table(df, w):
                 cm.Principal_Component_Forecast(df_train, df_test, "AIC"),
                 cm.Principal_Component_Forecast(df_train, df_test, "BIC"),
                 cm.Empirical_Bayes_Estimator(df_train, df_test),
-                cm.Kappa_Shrinkage(df_train, df_test, kappa=0.5)
+                cm.Kappa_Shrinkage(df_train, df_test, kappa=0.5),
+                cm.Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv=5)
                 ], axis=1).values[0]
 
     # compute and store accuracy measures for the combined forecasts
