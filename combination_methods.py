@@ -22,6 +22,9 @@ import pandas as pd
 import numpy as np
 from sklearn import linear_model
 from sklearn.decomposition import PCA
+from sklearn.utils.extmath import cartesian
+import itertools as it
+import time
 
 """
 SIMPLE METHODS
@@ -862,6 +865,155 @@ def Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv):
                                index=df_test_rd.index)
 
     return df_pred
+
+
+def BMA_marginal_likelihood(df_train, df_test, iterations, burnin, p_1):
+    """
+    The combination of forecasts using the bayesian model averaging. In this
+    case, the usual marginal likelihoods are used to compute the posterior
+    model probabilities. The posterior probabilities are then used as weights
+    to combine the models into the single forecast.
+
+    For searching the model space is used Reversible Jump Markov Chain
+    Monte Carlo (RJ-MCMC). First x of iterations are discarded as burnin.
+    The resulting combination from this method is computed conditinally
+    on the set of models visited by the chain.
+
+    """
+
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+    T = df_train.shape[0]
+
+    # g-prior parameter
+    c = float(K**2)
+
+    # separate real value and individual forecasts
+    y = df_train.iloc[:, 0]
+    F = df_train.iloc[:, 1:]
+
+    # initializations
+    models = np.full((iterations, K), fill_value=True, dtype=bool)
+    theta_hats = []
+    marginal_lik = np.full(iterations, fill_value=np.nan, dtype=float)
+
+    # RJ-MCMC
+    # initial state
+    models[0, :] = np.random.choice(np.array([True, False]), K)
+
+    # marginal likelihood for the initial state
+    y_bar = np.mean(y)
+    S_right = sum((y - y_bar)**2)/(c+1)
+
+    Z = np.insert(F.iloc[:, models[0, :]].values, 0, 1, axis=1)
+    theta_hat = np.dot(
+            np.linalg.inv(np.dot(np.transpose(Z), Z)),
+            np.dot(np.transpose(Z), y)
+            )
+    SSR = sum((y - np.dot(Z, theta_hat))**2)
+    S_left = (c/(c+1))*SSR
+    S = S_left + S_right
+    k = sum(models[0, :])
+    marginal_lik[0] = ((c+1)**(-k))*(S**(-((T-1)/2)))
+    theta_hats += [theta_hat]
+
+    # initialization of the proposal model
+    m_star = np.full(K, fill_value=True, dtype=bool)
+
+    # main iteration loop
+    for i in range(0, iterations-1):
+
+        # decide which move to perform
+        epsilon_move = np.random.random()
+
+        # move 1
+        if epsilon_move <= p_1:
+
+            # drawn one of the forecasts from the model
+            drawn_f_index = np.random.randint(0, K)
+
+            # if it is in the model, drop it, if not, add it
+            np.copyto(m_star, models[i, :])
+            m_star[drawn_f_index] = ~models[i, drawn_f_index]
+
+        # move 2
+        else:
+
+            # drawn one of the forecasts from the model and one outside
+            index_in = np.arange(K)[models[i, :]]
+            index_out = np.arange(K)[~models[i, :]]
+            drawn_f_index_in = np.random.choice(index_in)
+            drawn_f_index_out = np.random.choice(index_out)
+
+            # swap these two variables
+            np.copyto(m_star, models[i, :])
+            m_star[drawn_f_index_in] = ~m_star[drawn_f_index_in]
+            m_star[drawn_f_index_out] = ~m_star[drawn_f_index_out]
+
+        # calculate the probability of acceptance
+        Z = np.insert(F.iloc[:, m_star].values, 0, 1, axis=1)
+        theta_hat = np.dot(
+                np.linalg.inv(np.dot(np.transpose(Z), Z)),
+                np.dot(np.transpose(Z), y)
+                )
+        SSR = sum((y - np.dot(Z, theta_hat))**2)
+        S_left = (c/(c+1))*SSR
+        S = S_left + S_right
+        k = sum(m_star)
+        marginal_lik_m_star = ((c+1)**(-k))*(S**(-((T-1)/2)))
+
+        alpha = min(1, marginal_lik_m_star/marginal_lik[i])
+
+        # if accepted, move to m_star, else retain the same model
+        epsilon_accept = np.random.random()
+
+        if epsilon_accept <= alpha:
+            np.copyto(models[i+1, :], m_star)
+            marginal_lik[i+1] = marginal_lik_m_star
+            theta_hats += [theta_hat]
+        else:
+            np.copyto(models[i+1, :], models[i, :])
+            marginal_lik[i+1] = marginal_lik[i]
+            theta_hats += [theta_hats[-1]]
+
+    # discard the burnin draws
+    models = models[burnin:, :]
+    marginal_lik = marginal_lik[burnin:]
+    theta_hats = theta_hats[burnin:]
+
+    # unique models visited by the chain
+    models_uni, index_uni = np.unique(models, axis=0, return_index=True)
+    marginal_lik_uni = marginal_lik[index_uni]
+    # theta_hats_uni = [theta_hats[i] for i in index_uni]
+    theta_hats_uni = list(np.array(theta_hats)[index_uni])
+
+    # model posterior probabilities
+    marginal_lik_sum = sum(marginal_lik_uni)
+    posterior_prob = marginal_lik_uni / marginal_lik_sum
+
+    # generate prediction for testing set
+    model_fcts = np.full(
+            (df_test.shape[0], len(theta_hats_uni)),
+            np.nan,
+            dtype=float
+            )
+
+    # forecast from different models
+    for j in range(model_fcts.shape[1]):
+
+        model_fcts[:, j] = np.dot(
+                np.insert(df_test.iloc[:, models_uni[j]].values, 0, 1, axis=1),
+                theta_hats_uni[j]
+                )
+
+    pred = np.dot(model_fcts, posterior_prob)
+
+    df_pred = pd.DataFrame(
+            {"BMA (Marginal Likelihood)":  pred},
+            index=df_test.index)
+
+    return df_pred
+
 
 
 # THE END OF MODULE

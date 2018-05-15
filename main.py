@@ -53,14 +53,8 @@ df = spf_bal_RGDP_1Y
 w= 40
 
 # parameters for development of new combining methods
-lambda_1 = 0.05
-lambda_2 = 0.05
-
-lambda_1 = np.exp(-6)
-lambda_2 = np.exp(-6)
-
-k_cv = 5
-
-lambda_pair = [0.5, 0.5]
+iterations = 60000
+burnin = 10000
+p_1 = 0.5
 
 # END OF FILE

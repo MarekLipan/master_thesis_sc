@@ -10,6 +10,11 @@ This script is used to perform the main analysis, i.e. train and test models.
 import pandas as pd
 import numpy as np
 import forecast_tables as ft
+import random
+
+# set the seed for replicability of results
+random.seed(444)
+np.random.seed(444)
 
 # create accuracy tables
 acc_table_RGDP_1Y = ft.create_acc_table(
