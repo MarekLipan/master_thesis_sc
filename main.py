@@ -56,5 +56,6 @@ w= 40
 iterations = 60000
 burnin = 10000
 p_1 = 0.5
+l_share = 0.7
 
 # END OF FILE

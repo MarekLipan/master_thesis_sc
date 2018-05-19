@@ -59,7 +59,8 @@ def create_acc_table(df, w):
                        "Empirical Bayes Estimator",
                        "Kappa-Shrinkage",
                        "Two-Step Egalitarian LASSO",
-                       "BMA (Marginal Likelihood)"
+                       "BMA (Marginal Likelihood)",
+                       "BMA (Predictive Likelihood)"
                        ])
 
     # define dimensions
@@ -111,8 +112,11 @@ def create_acc_table(df, w):
                 cm.Empirical_Bayes_Estimator(df_train, df_test),
                 cm.Kappa_Shrinkage(df_train, df_test, kappa=0.5),
                 cm.Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv=5),
-                cm.BMA_marginal_likelihood(df_train, df_test, iterations=60000,
-                                           burnin=10000, p_1=0.5)
+                cm.BMA_Marginal_Likelihood(df_train, df_test, iterations=60000,
+                                           burnin=10000, p_1=0.5),
+                cm.BMA_Predictive_Likelihood(df_train, df_test,
+                                             iterations=60000, burnin=10000,
+                                             p_1=0.5, l_share=0.7)
                 ], axis=1).values[0]
 
     # compute and store accuracy measures for the combined forecasts
