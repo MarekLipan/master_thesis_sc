@@ -1199,4 +1199,80 @@ def BMA_Predictive_Likelihood(df_train, df_test, iterations, burnin, p_1,
             index=df_test.index)
 
     return df_pred
+
+
+def ANN(df_train, df_test):
+    """
+    Artificial Neural Network forecast combination method. It uses a single
+    hidden layer with up to three logistic nodes, possibly complemented with
+    K linear nodes. The 10-fold cross-validation is used to determine the
+    optimal number of nodes.
+
+    """
+
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+    T = df_train.shape[0]
+    
+    # matrix of individual forecasts
+    F = df_train.iloc[:, 1:].values
+    
+    # matrix of standardized forecasts and the intercept
+    y = df_train.iloc[:, 0]
+    y_bar = np.mean(y)
+    y_std = np.std(y, ddof=1)
+   
+    Z = np.concatenate(
+            (np.full((T,1), 1, dtype = float),
+             (F - y_bar) / y_std),
+            axis = 1)
+    
+    
+    
+    # randomly draw 10 Gamma sets (elements from uniform (-1, 1))
+    len_Gamma = 10
+    Gamma = []
+    
+    for i in range(len_Gamma):
+        Gamma += [
+                (np.random.rand(K+1, 3) * 2) - 1
+                ]
+        
+    # prepare design matrices for the estimation
+    X_list = []
+    
+    # add intercepts
+    for i in range(len_Gamma * 2 * 3 + 1):
+        X_list += [np.full((T,1), 1, dtype = float)]
+                
+    # add linear nodes to half of the ANNs + the first fully linear model
+    for i in range(len_Gamma * 3 + 1):
+        
+        X_list[i] = np.concatenate((X_list[i], F), axis=1)
+        
+    # add logistic nodes
+    for i in range(len_Gamma):
+        
+        for p in range(1, 4):
+            
+            logistic_nodes = np.exp(-np.dot(Z, Gamma[i][:,:p]))
+            
+            X_list[i * 3 + p] = np.concatenate((X_list[i * 3 + p], 
+                  logistic_nodes), axis = 1)
+        
+    p = 2
+                
+                
+                
+                
+                
+    # predictions
+    pred = np.dot(model_fcts, posterior_prob)
+    
+    df_pred = pd.DataFrame(
+            {"ANN":  pred},
+            index=df_test.index
+            )
+
+    return df_pred
 # THE END OF MODULE
