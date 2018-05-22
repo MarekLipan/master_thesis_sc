@@ -1213,62 +1213,113 @@ def ANN(df_train, df_test):
     # number of individual forecasts and number of periods
     K = df_test.shape[1]
     T = df_train.shape[0]
-    
-    # matrix of individual forecasts
-    F = df_train.iloc[:, 1:].values
-    
+    T_all = df_train.shape[0] + df_test.shape[0]
+
+    # matrix of individual forecasts (including train and test sets)
+    F = np.concatenate((df_train.iloc[:, 1:].values, df_test.values), axis=0)
+
     # matrix of standardized forecasts and the intercept
     y = df_train.iloc[:, 0]
     y_bar = np.mean(y)
     y_std = np.std(y, ddof=1)
-   
+
     Z = np.concatenate(
-            (np.full((T,1), 1, dtype = float),
+            (np.full((T_all, 1), 1, dtype=float),
              (F - y_bar) / y_std),
-            axis = 1)
-    
-    
-    
+            axis=1)
+
     # randomly draw 10 Gamma sets (elements from uniform (-1, 1))
     len_Gamma = 10
     Gamma = []
-    
+
     for i in range(len_Gamma):
         Gamma += [
                 (np.random.rand(K+1, 3) * 2) - 1
                 ]
-        
+
     # prepare design matrices for the estimation
     X_list = []
-    
+
     # add intercepts
     for i in range(len_Gamma * 2 * 3 + 1):
-        X_list += [np.full((T,1), 1, dtype = float)]
-                
+        X_list += [np.full((T_all, 1), 1, dtype=float)]
+
     # add linear nodes to half of the ANNs + the first fully linear model
     for i in range(len_Gamma * 3 + 1):
-        
+
         X_list[i] = np.concatenate((X_list[i], F), axis=1)
-        
-    # add logistic nodes
-    for i in range(len_Gamma):
-        
-        for p in range(1, 4):
-            
-            logistic_nodes = np.exp(-np.dot(Z, Gamma[i][:,:p]))
-            
-            X_list[i * 3 + p] = np.concatenate((X_list[i * 3 + p], 
-                  logistic_nodes), axis = 1)
-        
-    p = 2
-                
-                
-                
-                
-                
-    # predictions
-    pred = np.dot(model_fcts, posterior_prob)
-    
+
+    # add logistic nodes to all models (2 halves) except the first one
+    for h in range(2):
+
+        for i in range(len_Gamma):
+
+            for p in range(1, 4):
+
+                logistic_nodes = 1 / (1 + np.exp(-np.dot(Z, Gamma[i][:, :p])))
+
+                X_list[(h * len_Gamma + i) * 3 + p] = np.concatenate(
+                        (X_list[(h * len_Gamma + i) * 3 + p], logistic_nodes),
+                        axis=1)
+
+    # search for the best model specification using the 10-fold CV
+    cv_sq_errors = np.full(len(X_list), 0, dtype=float)
+
+    for i in range(10):
+
+        # train and test indices
+        cv_y_train_index = np.full(T, True, dtype=bool)
+        cv_y_train_index[int(i * T/10):int((i+1) * T/10)] = False
+
+        cv_X_train_index = np.append(cv_y_train_index,
+                                     np.full(T_all-T, False, dtype=bool))
+        cv_X_test_index = np.append(~cv_y_train_index,
+                                    np.full(T_all-T, False, dtype=bool))
+
+        # variable to be forecast
+        cv_y_train = y[cv_y_train_index]
+        cv_y_test = y[~cv_y_train_index]
+
+        # design matrix for each model separately
+        for j in range(len(X_list)):
+
+            # set for training
+            cv_X_train = X_list[j][cv_X_train_index, :]
+
+            # set for testing
+            cv_X_test = X_list[j][cv_X_test_index, :]
+
+            # estimate the model
+            est_par = np.dot(
+                np.linalg.inv(np.dot(np.transpose(cv_X_train), cv_X_train)),
+                np.dot(np.transpose(cv_X_train), cv_y_train)
+                )
+
+            # predict
+            cv_y_pred = np.dot(cv_X_test, est_par)
+
+            # save the squared errors
+            cv_sq_errors[j] += np.sum((cv_y_test - cv_y_pred)**2)
+
+    # turn the sum of squared errors to mean squared errors
+    cv_MSE = cv_sq_errors/T
+
+    # find the ANN specification with the minimal CV MSE
+    best_spec_index = np.argmin(cv_MSE)
+
+    # train the best ANN
+    X_train = X_list[best_spec_index][:T, :]
+
+    est_par = np.dot(
+            np.linalg.inv(np.dot(np.transpose(X_train), X_train)),
+            np.dot(np.transpose(X_train), y)
+            )
+
+    # final predictions
+    X_test = X_list[best_spec_index][T:, :]
+
+    pred = np.dot(X_test, est_par)
+
     df_pred = pd.DataFrame(
             {"ANN":  pred},
             index=df_test.index

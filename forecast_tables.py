@@ -60,7 +60,8 @@ def create_acc_table(df, w):
                        "Kappa-Shrinkage",
                        "Two-Step Egalitarian LASSO",
                        "BMA (Marginal Likelihood)",
-                       "BMA (Predictive Likelihood)"
+                       "BMA (Predictive Likelihood)",
+                       "ANN"
                        ])
 
     # define dimensions
@@ -116,7 +117,8 @@ def create_acc_table(df, w):
                                            burnin=10000, p_1=0.5),
                 cm.BMA_Predictive_Likelihood(df_train, df_test,
                                              iterations=60000, burnin=10000,
-                                             p_1=0.5, l_share=0.7)
+                                             p_1=0.5, l_share=0.7),
+                cm.ANN(df_train, df_test)
                 ], axis=1).values[0]
 
     # compute and store accuracy measures for the combined forecasts
