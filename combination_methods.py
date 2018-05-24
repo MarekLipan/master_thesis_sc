@@ -1326,4 +1326,118 @@ def ANN(df_train, df_test):
             )
 
     return df_pred
+
+
+def EP_NN(df_train, df_test, sigma, gen, n):
+    """
+    Evolving Artificial Neural Network forecast combination method.
+    It uses a single hidden layer with three logistic nodes, complemented with
+    K linear nodes. The paramaterers in the logistic nodes are optimalized
+    trough the stochastic numerical process. Median MSE EP-NN from 29
+    independently estimated ones is taken as the final EP-NN.
+
+    """
+
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+    T = df_train.shape[0]
+    T_all = df_train.shape[0] + df_test.shape[0]
+
+    # matrix of individual forecasts
+    F = df_train.iloc[:, 1:].values
+
+    # matrix of standardized forecasts and the intercept
+    y = df_train.iloc[:, 0]
+    y_bar = np.mean(y)
+    y_std = np.std(y, ddof=1)
+    Y = y.values.reshape(T, 1)
+
+    Z = np.concatenate(
+            (np.full((T, 1), 1, dtype=float),
+             (F - y_bar) / y_std),
+            axis=1)
+
+    # run the procedure 29 times to select the median EP-NN as the final one
+    MSE_vec_star = np.full(29, 0, dtype=float)
+    Gamma_star = np.full((29, K+1, 3), 0, dtype=float)
+
+    for j in range(29):
+
+        # the EP-NN procedure
+        # step 1
+        Gamma = (np.random.rand(n, K+1, 3) * 2) - 1
+
+        # steps (2-5)
+        for i in range(gen):
+
+            # step 2
+            logistic_nodes = 1 / (1 + np.exp(-np.matmul(Z, Gamma)))
+
+            X = np.concatenate((np.full((T, 1), 1, dtype=float), F), axis=1)
+            X = np.repeat(X[np.newaxis, :, :], n, axis=0)
+            X = np.concatenate((X, logistic_nodes), axis=2)
+
+            est_par = np.matmul(
+                    np.linalg.inv(np.matmul(np.swapaxes(X, 1, 2), X)),
+                    np.matmul(np.swapaxes(X, 1, 2), Y)
+                    )
+
+            Y_pred = np.matmul(X, est_par)
+            MSE_vec = np.sum((Y - Y_pred)**2, axis=1)/T
+
+            # step 3
+            sort_ind = np.argsort(MSE_vec.flatten())
+            Gamma = Gamma[sort_ind, :, :]
+
+            # step 4
+            eta = np.concatenate((
+                    np.full((int(np.ceil(n/2)), K+1, 3), 0, dtype=float),
+                    sigma * np.random.randn(int(np.floor(n/2)), K+1, 3)
+                    ), axis=0)
+
+            Gamma = Gamma + eta
+
+        # sort also the last MSE_vec
+        MSE_vec = MSE_vec[sort_ind]
+
+        # save the Gamma star and its corresponding MSE
+        MSE_vec_star[j] = MSE_vec[0]
+        Gamma_star[j, :, :] = Gamma[0, :, :]
+
+    # median MSE Gamma as the final Gamma
+    median_ind = np.argsort(MSE_vec_star)[14]
+    Gamma_fin = Gamma_star[median_ind, :, :]
+
+    # train the final EP-NN, necessary to merge individual forecasts from
+    # the train and test dataframes
+    F_all = np.concatenate((df_train.iloc[:, 1:].values, df_test.values),
+                           axis=0)
+    Z_all = np.concatenate(
+            (np.full((T_all, 1), 1, dtype=float),
+             (F_all - y_bar) / y_std),
+            axis=1)
+    logistic_nodes_fin = 1 / (1 + np.exp(-np.matmul(Z_all, Gamma_fin)))
+    F_fin = np.concatenate((np.full((T_all, 1), 1, dtype=float), F_all),
+                           axis=1)
+    X_fin = np.concatenate((F_fin, logistic_nodes_fin), axis=1)
+
+    X_train = X_fin[:T, :]
+
+    est_par_fin = np.dot(
+            np.linalg.inv(np.dot(np.transpose(X_train), X_train)),
+            np.dot(np.transpose(X_train), y)
+            )
+
+    # final predictions
+    X_test = X_fin[T:, :]
+
+    pred = np.dot(X_test, est_par_fin)
+
+    df_pred = pd.DataFrame(
+            {"EP-NN":  pred},
+            index=df_test.index
+            )
+
+    return df_pred
+
 # THE END OF MODULE

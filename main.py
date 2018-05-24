@@ -53,9 +53,8 @@ df = spf_bal_RGDP_1Y
 w= 40
 
 # parameters for development of new combining methods
-iterations = 60000
-burnin = 10000
-p_1 = 0.5
-l_share = 0.7
+gen = 1000
+sigma = 0.05
+n = 20
 
 # END OF FILE
