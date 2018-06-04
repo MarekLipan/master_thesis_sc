@@ -1440,4 +1440,140 @@ def EP_NN(df_train, df_test, sigma, gen, n):
 
     return df_pred
 
+
+def Bagging(df_train, df_test, B):
+    """
+    The Bagging  (Bootstrap aggregation) forecast combination method with
+    a t-test pre-test for variable selection. B overlapping random blocks are
+    randomly drawn from the training sample and for each is applied the
+    pre-test and the model is trained after the variable selection. If no
+    variable passes the pre-test, the prediction is zero. The final
+    combination is the average of forecasts of these B models.
+
+    """
+
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+    T = df_train.shape[0]
+
+    # matrix for saving predictions from bootstrapped models
+    pred_mat = np.full((df_test.shape[0], B), np.nan, dtype=float)
+
+    # length of the boostrap block
+    m = int(T**(1/3))
+    p = np.int(T/m)
+
+    # pairwise bootstrap
+    # for i in range(B):
+    #
+    #    # create the bootstrap sample from randomly drawn blocks
+    #   boot_indices = np.random.randint(T, size=T)
+    #    boot_X = df_train.iloc[boot_indices, 1:]
+    #   boot_y = df_train.iloc[boot_indices, 0]
+    #
+    #    # pre-test
+    #    # estimate OLS on the block with all individual forecasts
+    #    boot_X_t = np.transpose(boot_X)
+    #    XX = np.linalg.inv(np.dot(boot_X_t, boot_X))
+    #    beta_hat = np.linalg.multi_dot([XX, boot_X_t, boot_y])
+    #
+    #    # residuals
+    #    epsilon = boot_y - np.dot(boot_X, beta_hat)
+    #    epsilon_sq = epsilon**2
+    #
+    #    # variances (heteroskedasticity robust)
+    #    Sigma = np.diag(epsilon_sq)
+    #    beta_var = np.diag(
+    #            np.linalg.multi_dot([XX, boot_X_t, Sigma, boot_X, XX])
+    #            )
+
+    # moving block bootstrap
+    for i in range(B):
+
+        # create the bootstrap sample from randomly drawn blocks
+        boot_X = np.full((p*m, K), np.nan, dtype=float)
+        boot_y = np.full((p*m, 1), np.nan, dtype=float)
+
+        for j in range(p):
+
+            # draw the random block
+            start_index = np.random.randint(T-m)
+            end_index = start_index + m
+
+            # fill the sample with another block
+            boot_X[j*m:(j+1)*m, :] = df_train.iloc[start_index:end_index, 1:]
+            boot_y[j*m:(j+1)*m, 0] = df_train.iloc[start_index:end_index, 0]
+
+        # pre-test
+        # estimate OLS on the block with all individual forecasts
+        beta_hat = np.dot(
+            np.linalg.inv(np.dot(np.transpose(boot_X), boot_X)),
+            np.dot(np.transpose(boot_X), boot_y)
+            )
+
+        # residuals
+        epsilon = boot_y - np.dot(boot_X, beta_hat)
+
+        # compute the absolute t-statistics
+        # compute S
+        S_sum = np.full((K, K), 0, dtype=float)
+        for e in range(p):
+            for f in range(m):
+                for g in range(m):
+
+                    F_f = boot_X[e*m + f, :][:, np.newaxis]
+                    F_g = boot_X[e*m + g, :][:, np.newaxis]
+                    eps_f = epsilon[e*m + f]
+                    eps_g = epsilon[e*m + g]
+                    S_sum += np.dot(F_f * eps_f, np.transpose(F_g * eps_g))
+
+        S = S_sum / (p*m)
+
+        # compute H
+        H_sum = np.full((K, K), 0, dtype=float)
+        for e in range(p):
+            for f in range(m):
+
+                F_f = boot_X[e*m + f, :][:, np.newaxis]
+                H_sum += np.dot(F_f, np.transpose(F_f))
+
+        H = H_sum / (p*m)
+        H_inv = np.linalg.inv(H)
+
+        # variances
+        beta_var = np.diag(
+                1/np.sqrt(T) * np.linalg.multi_dot([H_inv, S, H_inv])
+                )
+
+        # near singularity may cause negative variance issues
+        if (beta_var > 0).all():
+
+            # t-statistics
+            t_stats_abs = np.abs(beta_hat.flatten() / np.sqrt(beta_var))
+
+            # variable selection
+            boot_X_sel = boot_X[:, t_stats_abs > 1.96]
+
+            # estimate OLS on the block with the selected forecasts
+            boot_X_sel_t = np.transpose(boot_X_sel)
+            gamma_hat = np.linalg.multi_dot(
+                    [np.linalg.inv(np.dot(boot_X_sel_t, boot_X_sel)),
+                     boot_X_sel_t, boot_y])
+
+            # forecast out-of-sample
+            pred_mat[:, i] = np.dot(
+                    df_test.iloc[:, t_stats_abs > 1.96].values,
+                    gamma_hat
+                    ).flatten()
+
+    # aggregation of forecasts
+    pred = np.nanmean(pred_mat, axis=1)
+
+    df_pred = pd.DataFrame(
+            {"Bagging":  pred},
+            index=df_test.index
+            )
+
+    return df_pred
+
 # THE END OF MODULE

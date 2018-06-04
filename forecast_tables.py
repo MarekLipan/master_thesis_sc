@@ -62,7 +62,8 @@ def create_acc_table(df, w):
                        "BMA (Marginal Likelihood)",
                        "BMA (Predictive Likelihood)",
                        "ANN",
-                       "EP-NN"
+                       "EP-NN",
+                       "Bagging"
                        ])
 
     # define dimensions
@@ -120,7 +121,8 @@ def create_acc_table(df, w):
                                              iterations=60000, burnin=10000,
                                              p_1=0.5, l_share=0.7),
                 cm.ANN(df_train, df_test),
-                cm.EP_NN(df_train, df_test, sigma=0.05, gen=1000, n=20)
+                cm.EP_NN(df_train, df_test, sigma=0.05, gen=1000, n=20),
+                cm.Bagging(df_train, df_test, B=1000)
                 ], axis=1).values[0]
 
     # compute and store accuracy measures for the combined forecasts
