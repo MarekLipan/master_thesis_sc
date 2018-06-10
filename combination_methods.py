@@ -1576,4 +1576,121 @@ def Bagging(df_train, df_test, B):
 
     return df_pred
 
+
+def Gradient_Boosting(df_train, df_test, nu):
+    """
+    The componentwise Gradient Boosting method for gradual estimation
+    of the linear forecast combination. The OLS fitting procedure is used
+    as the base learner. The quadratic loss function is used. The parameter nu
+    determines the amount of shrinkage and the number of boosting iterations
+    is determined in the 5-fold cross-validation.
+
+    """
+
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+    T = df_train.shape[0]
+    T_test = df_test.shape[0]
+
+    # variable of interest
+    y = df_train.iloc[:, 0].values[:, np.newaxis]
+    y_bar = np.mean(y)
+
+    # individual forecasts
+    F = np.swapaxes(df_train.iloc[:, 1:].values, 0, 1)[:, :, np.newaxis]
+    F_t = np.swapaxes(F, 1, 2)
+    F_test = np.swapaxes(df_test.values, 0, 1)[:, :, np.newaxis]
+
+    # 5-fold CV to determine optimal M
+    # length of training and testing sets
+    T_cv_test = int(T/5)
+    T_cv_train = T - T_cv_test
+
+    # initialize vector to store the precision of fit
+    SSR_vec = np.full(1000, 0, dtype=float)
+
+    # find the optimal number of boosting iterationts using 5-fold CV
+    # CV folds
+    for k in range(5):
+
+        # definition of the test and training sample for the given CV round
+        cv_index = np.full(T, True, dtype=bool)
+        cv_index[(k*T_cv_test):((k+1)*T_cv_test)] = False
+
+        y_cv = y[cv_index]
+        y_cv_bar = np.mean(y_cv)
+        y_cv_test = y[~cv_index]
+
+        F_cv = F[:, cv_index, :]
+        F_cv_t = F_t[:, :, cv_index]
+        F_cv_test = F[:, ~cv_index, :]
+
+        # initialization step
+        psi = np.tile(y_cv_bar, (T_cv_train, 1))
+        psi_test = np.tile(y_cv_bar, (T_cv_test, 1))
+
+        # main steps
+        for m in range(1000):
+
+            # compute the negative gradient vector
+            u = y_cv - psi
+
+            # regress the negative gradient vector on the ind. forecasts
+            beta_hat = np.matmul(
+                    1/np.matmul(F_cv_t, F_cv),
+                    np.matmul(F_cv_t, np.tile(u, (K, 1, 1)))
+                    )
+
+            # save the sums of the squared residuals
+            SSR = np.dot(np.ones(T_cv_train), (u - (beta_hat * F_cv))**2)
+
+            # find the minimum SSR and its corresponding ind.forecast
+            k_star = np.argmin(SSR)
+
+            # update
+            psi += nu * beta_hat[k_star, :, :] * F_cv[k_star, :, :]
+            psi_test += nu * beta_hat[k_star, :, :] * F_cv_test[
+             k_star, :, :]
+
+            # save the precision of the fit
+            SSR_vec[m] += np.sum((y_cv_test - psi_test)**2)
+
+    # find number of iterations for which the MSE is the lowest
+    M = np.argmin(SSR_vec) + 1
+
+    # final Gradient Boosting with pre-determined number of iterations M
+    # initialization step
+    psi = np.tile(y_bar, (T, 1))
+    psi_test = np.tile(y_bar, (T_test, 1))
+
+    # main steps
+    for m in range(M):
+
+        # compute the negative gradient vector
+        u = y - psi
+
+        # regress the negative gradient vector on the individual forecasts
+        beta_hat = np.matmul(
+                1/np.matmul(F_t, F),
+                np.matmul(F_t, np.tile(u, (K, 1, 1)))
+                )
+
+        # save the sums of the squared residuals
+        SSR = np.dot(np.ones(T), (u - (beta_hat * F))**2)
+
+        # find the minimum SSR and its corresponding individual forecast
+        k_star = np.argmin(SSR)
+
+        # update
+        psi += nu * beta_hat[k_star, :, :] * F[k_star, :, :]
+        psi_test += nu * beta_hat[k_star, :, :] * F_test[k_star, :, :]
+
+    # predictions
+    df_pred = pd.DataFrame(
+            {"Gradient Boosting":  psi_test.flatten()},
+            index=df_test.index
+            )
+
+    return df_pred
+
 # THE END OF MODULE
