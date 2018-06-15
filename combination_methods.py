@@ -1693,4 +1693,71 @@ def Gradient_Boosting(df_train, df_test, nu):
 
     return df_pred
 
+
+def AdaBoost(df_train, df_test, phi):
+    """
+    The AdaBoost algorithm, which combines the best metaparameters for
+    time series forecasting (Barrow & Crone, 2016).
+
+    """
+
+    # number of periods
+    T = df_train.shape[0]
+    T_test = df_test.shape[0]
+
+    # initialize observation weights
+    w = np.full(T, 1, dtype=float)
+    w_sum = np.sum(w)
+
+    # prepare testing set
+    test_F = df_test.values
+    test_y_pred = np.full((T_test, 50), np.nan, dtype=float)
+
+    # AdaBoost iteration steps
+    for i in range(50):
+
+        # compute observation probabilities from weights
+        prob = w / w_sum
+
+        # generate the training sample
+        train_index = np.random.choice(T, size=T, p=prob)
+        train_F = df_train.iloc[train_index, 1:]
+        train_F_t = np.swapaxes(train_F, 0, 1)
+        train_y = df_train.iloc[train_index, 0]
+
+        # training the model by OLS
+        theta_hat = np.linalg.multi_dot(
+                [np.linalg.inv(np.dot(train_F_t, train_F)), train_F_t, train_y]
+                )
+
+        # predictions
+        train_y_pred = np.dot(train_F, theta_hat)
+        test_y_pred[:, i] = np.dot(test_F, theta_hat)
+
+        # absolute relative errors
+        ARE = np.abs((train_y - train_y_pred)/train_y)
+
+        # threshold losses
+        L = (ARE > phi)*1
+
+        # weighted average loss
+        L_bar = np.dot(L, prob)
+
+        # model confidence
+        beta = np.log(1/L_bar)
+
+        # observation weights updating
+        w = np.multiply(w, beta**(1-L))
+        w_sum = np.sum(w)
+
+    # forecast combination
+    pred = np.mean(test_y_pred, axis=1)
+
+    # output
+    df_pred = pd.DataFrame(
+            {"AdaBoost":  pred},
+            index=df_test.index
+            )
+
+    return df_pred
 # THE END OF MODULE
