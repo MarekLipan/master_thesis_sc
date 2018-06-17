@@ -53,6 +53,5 @@ df = spf_bal_RGDP_1Y
 w= 40
 
 # parameters for development of new combining methods
-phi = 0.1
 
 # END OF FILE

@@ -22,6 +22,7 @@ import pandas as pd
 import numpy as np
 from sklearn import linear_model
 from sklearn.decomposition import PCA
+from sklearn.neural_network import MLPRegressor
 import time
 
 """
@@ -1332,7 +1333,7 @@ def EP_NN(df_train, df_test, sigma, gen, n):
     """
     Evolving Artificial Neural Network forecast combination method.
     It uses a single hidden layer with three logistic nodes, complemented with
-    K linear nodes. The paramaterers in the logistic nodes are optimalized
+    K linear nodes. The paramaterers in the logistic nodes are optimized
     trough the stochastic numerical process. Median MSE EP-NN from 29
     independently estimated ones is taken as the final EP-NN.
 
@@ -1577,9 +1578,9 @@ def Bagging(df_train, df_test, B):
     return df_pred
 
 
-def Gradient_Boosting(df_train, df_test, nu):
+def Componentwise_Boosting(df_train, df_test, nu):
     """
-    The componentwise Gradient Boosting method for gradual estimation
+    The Componentwise Boosting method for gradual estimation
     of the linear forecast combination. The OLS fitting procedure is used
     as the base learner. The quadratic loss function is used. The parameter nu
     determines the amount of shrinkage and the number of boosting iterations
@@ -1687,7 +1688,7 @@ def Gradient_Boosting(df_train, df_test, nu):
 
     # predictions
     df_pred = pd.DataFrame(
-            {"Gradient Boosting":  psi_test.flatten()},
+            {"Componentwise Boosting":  psi_test.flatten()},
             index=df_test.index
             )
 
@@ -1709,9 +1710,18 @@ def AdaBoost(df_train, df_test, phi):
     w = np.full(T, 1, dtype=float)
     w_sum = np.sum(w)
 
+    # matrix of individual forecasts
+    F = df_train.iloc[:, 1:]
+
+    # dependent variable
+    y = df_train.iloc[:, 0]
+
     # prepare testing set
     test_F = df_test.values
     test_y_pred = np.full((T_test, 50), np.nan, dtype=float)
+
+    # prepare MLP object
+    MLP = MLPRegressor(hidden_layer_sizes=2, activation="tanh", solver="lbfgs")
 
     # AdaBoost iteration steps
     for i in range(50):
@@ -1722,20 +1732,25 @@ def AdaBoost(df_train, df_test, phi):
         # generate the training sample
         train_index = np.random.choice(T, size=T, p=prob)
         train_F = df_train.iloc[train_index, 1:]
-        train_F_t = np.swapaxes(train_F, 0, 1)
+        # train_F_t = np.swapaxes(train_F, 0, 1)
         train_y = df_train.iloc[train_index, 0]
 
         # training the model by OLS
-        theta_hat = np.linalg.multi_dot(
-                [np.linalg.inv(np.dot(train_F_t, train_F)), train_F_t, train_y]
-                )
+        # theta_hat = np.linalg.multi_dot(
+        #        [np.linalg.inv(np.dot(train_F_t, train_F)), train_F_t,train_y]
+        #         )
 
-        # predictions
-        train_y_pred = np.dot(train_F, theta_hat)
-        test_y_pred[:, i] = np.dot(test_F, theta_hat)
+        # fit MLP
+        MLP_fit = MLP.fit(train_F, train_y)
+
+        # predictions (on the original dataset)
+        # y_pred = np.dot(F, theta_hat)
+        # test_y_pred[:, i] = np.dot(test_F, theta_hat)
+        y_pred = MLP_fit.predict(F)
+        test_y_pred[:, i] = MLP_fit.predict(test_F)
 
         # absolute relative errors
-        ARE = np.abs((train_y - train_y_pred)/train_y)
+        ARE = np.abs((y - y_pred)/y)
 
         # threshold losses
         L = (ARE > phi)*1
@@ -1746,8 +1761,8 @@ def AdaBoost(df_train, df_test, phi):
         # model confidence
         beta = np.log(1/L_bar)
 
-        # observation weights updating
-        w = np.multiply(w, beta**(1-L))
+        # observation weights updating, absolute value for comp. reasons
+        w = np.abs(np.multiply(w, beta**(1-L)))
         w_sum = np.sum(w)
 
     # forecast combination

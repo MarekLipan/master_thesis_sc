@@ -64,7 +64,8 @@ def create_acc_table(df, w):
                        "ANN",
                        "EP-NN",
                        "Bagging",
-                       "Gradient Boosting"
+                       "Componentwise Boosting",
+                       "AdaBoost"
                        ])
 
     # define dimensions
@@ -124,7 +125,8 @@ def create_acc_table(df, w):
                 cm.ANN(df_train, df_test),
                 cm.EP_NN(df_train, df_test, sigma=0.05, gen=1000, n=20),
                 cm.Bagging(df_train, df_test, B=1000),
-                cm.Gradient_Boosting
+                cm.Componentwise_Boosting(df_train, df_test, nu=0.1),
+                cm.AdaBoost(df_train, df_test, phi=0.2)
                 ], axis=1).values[0]
 
     # compute and store accuracy measures for the combined forecasts
