@@ -11,29 +11,28 @@ import pandas as pd
 import numpy as np
 import forecast_tables as ft
 import random
+import multiprocessing as mp
+
+num_workers = mp.cpu_count() 
+
+start_time = time.time()
 
 # set the seed for replicability of results
 random.seed(444)
 np.random.seed(444)
 
 # create accuracy tables
-acc_table_RGDP_1Y = ft.create_acc_table(
-        df=spf_bal_RGDP_1Y, w=40)
+acc_table_RGDP_1Y = ft.create_acc_table(df=spf_bal_RGDP_1Y, w=40)
 
-acc_table_RGDP_2Y = ft.create_acc_table(
-        df=spf_bal_RGDP_2Y, w=40)
+end_time = time.time()
+duration = end_time - start_time
+print(duration)
 
-acc_table_HICP_1Y = ft.create_acc_table(
-        df=spf_bal_HICP_1Y, w=40)
-
-acc_table_HICP_2Y = ft.create_acc_table(
-        df=spf_bal_HICP_2Y, w=40)
-
-acc_table_UNEM_1Y = ft.create_acc_table(
-        df=spf_bal_UNEM_1Y, w=40)
-
-acc_table_UNEM_2Y = ft.create_acc_table(
-        df=spf_bal_UNEM_2Y, w=40)
+acc_table_RGDP_2Y = ft.create_acc_table(df=spf_bal_RGDP_2Y, w=40)
+acc_table_HICP_1Y = ft.create_acc_table(df=spf_bal_HICP_1Y, w=40)
+acc_table_HICP_2Y = ft.create_acc_table(df=spf_bal_HICP_2Y, w=40)
+acc_table_UNEM_1Y = ft.create_acc_table(df=spf_bal_UNEM_1Y, w=40)
+acc_table_UNEM_2Y = ft.create_acc_table(df=spf_bal_UNEM_2Y, w=40)
 
 # export accuracy tables to tex
 ft.gen_tex_table(tbl=acc_table_RGDP_1Y,

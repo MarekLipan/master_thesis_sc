@@ -866,6 +866,12 @@ def Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv):
     return df_pred
 
 
+"""
+BAYESIAN MODEL AVERAGING
+
+"""
+
+
 def BMA_Marginal_Likelihood(df_train, df_test, iterations, burnin, p_1):
     """
     The combination of forecasts using the bayesian model averaging. In this
@@ -1202,6 +1208,12 @@ def BMA_Predictive_Likelihood(df_train, df_test, iterations, burnin, p_1,
     return df_pred
 
 
+"""
+ANN, BAGGING & BOOSTING
+
+"""
+
+
 def ANN(df_train, df_test):
     """
     Artificial Neural Network forecast combination method. It uses a single
@@ -1334,8 +1346,8 @@ def EP_NN(df_train, df_test, sigma, gen, n):
     Evolving Artificial Neural Network forecast combination method.
     It uses a single hidden layer with three logistic nodes, complemented with
     K linear nodes. The paramaterers in the logistic nodes are optimized
-    trough the stochastic numerical process. Median MSE EP-NN from 29
-    independently estimated ones is taken as the final EP-NN.
+    trough the stochastic numerical process. Half of the population is evolved
+    in each iteration.
 
     """
 
@@ -1358,56 +1370,42 @@ def EP_NN(df_train, df_test, sigma, gen, n):
              (F - y_bar) / y_std),
             axis=1)
 
-    # run the procedure 29 times to select the median EP-NN as the final one
-    MSE_vec_star = np.full(29, 0, dtype=float)
-    Gamma_star = np.full((29, K+1, 3), 0, dtype=float)
+    # preparation for design matrix
+    X_prep = np.concatenate((np.full((T, 1), 1, dtype=float), F), axis=1)
+    X_prep = np.repeat(X_prep[np.newaxis, :, :], n, axis=0)
 
-    for j in range(29):
+    # preparation for evolution
+    evol_size = int(np.floor(n/2))
+    eta_prep = np.full((int(np.ceil(n/2)), K+1, 3), 0, dtype=float)
 
-        # the EP-NN procedure
-        # step 1
-        Gamma = (np.random.rand(n, K+1, 3) * 2) - 1
+    # the EP-NN procedure
+    # step 1
+    Gamma = (np.random.rand(n, K+1, 3) * 2) - 1
 
-        # steps (2-5)
-        for i in range(gen):
+    # steps (2-5)
+    for i in range(gen):
 
-            # step 2
-            logistic_nodes = 1 / (1 + np.exp(-np.matmul(Z, Gamma)))
+        # step 2
+        logistic_nodes = 1 / (1 + np.exp(-np.matmul(Z, Gamma)))
+        X = np.concatenate((X_prep, logistic_nodes), axis=2)
+        X_t = np.swapaxes(X, 1, 2)
+        est_par = np.matmul(
+                np.linalg.inv(np.matmul(X_t, X)),
+                np.matmul(X_t, Y)
+                )
+        Y_pred = np.matmul(X, est_par)
+        MSE_vec = np.sum((Y - Y_pred)**2, axis=1)/T
+        # step 3
+        sort_ind = np.argsort(MSE_vec.flatten())
+        Gamma = Gamma[sort_ind, :, :]
+        # step 4
+        eta = np.concatenate(
+                (eta_prep, sigma * np.random.randn(evol_size, K+1, 3)),
+                axis=0)
+        Gamma += eta
 
-            X = np.concatenate((np.full((T, 1), 1, dtype=float), F), axis=1)
-            X = np.repeat(X[np.newaxis, :, :], n, axis=0)
-            X = np.concatenate((X, logistic_nodes), axis=2)
-
-            est_par = np.matmul(
-                    np.linalg.inv(np.matmul(np.swapaxes(X, 1, 2), X)),
-                    np.matmul(np.swapaxes(X, 1, 2), Y)
-                    )
-
-            Y_pred = np.matmul(X, est_par)
-            MSE_vec = np.sum((Y - Y_pred)**2, axis=1)/T
-
-            # step 3
-            sort_ind = np.argsort(MSE_vec.flatten())
-            Gamma = Gamma[sort_ind, :, :]
-
-            # step 4
-            eta = np.concatenate((
-                    np.full((int(np.ceil(n/2)), K+1, 3), 0, dtype=float),
-                    sigma * np.random.randn(int(np.floor(n/2)), K+1, 3)
-                    ), axis=0)
-
-            Gamma = Gamma + eta
-
-        # sort also the last MSE_vec
-        MSE_vec = MSE_vec[sort_ind]
-
-        # save the Gamma star and its corresponding MSE
-        MSE_vec_star[j] = MSE_vec[0]
-        Gamma_star[j, :, :] = Gamma[0, :, :]
-
-    # median MSE Gamma as the final Gamma
-    median_ind = np.argsort(MSE_vec_star)[14]
-    Gamma_fin = Gamma_star[median_ind, :, :]
+    # select the best Gama
+    Gamma_fin = Gamma[0, :, :]
 
     # train the final EP-NN, necessary to merge individual forecasts from
     # the train and test dataframes
@@ -1488,82 +1486,85 @@ def Bagging(df_train, df_test, B):
     #            np.linalg.multi_dot([XX, boot_X_t, Sigma, boot_X, XX])
     #            )
 
-    # moving block bootstrap
-    for i in range(B):
+    # moving block bootstrap (in the first dimension of the array)
+    # divide the sample into blocks of length m
+    blocks = np.asarray(np.split(df_train.values[:p*m, :], p, axis=0))
 
-        # create the bootstrap sample from randomly drawn blocks
-        boot_X = np.full((p*m, K), np.nan, dtype=float)
-        boot_y = np.full((p*m, 1), np.nan, dtype=float)
+    # create bootstrap samples by sampling blocks
+    boot_ind = np.random.randint(p, size=(B, p))
+    boot_sample = np.reshape(blocks[boot_ind, :, :], (B, p*m, 22))
+    boot_X = boot_sample[:, :, 1:]
+    boot_y = boot_sample[:, :, 0][:, :, np.newaxis]
 
-        for j in range(p):
-
-            # draw the random block
-            start_index = np.random.randint(T-m)
-            end_index = start_index + m
-
-            # fill the sample with another block
-            boot_X[j*m:(j+1)*m, :] = df_train.iloc[start_index:end_index, 1:]
-            boot_y[j*m:(j+1)*m, 0] = df_train.iloc[start_index:end_index, 0]
-
-        # pre-test
-        # estimate OLS on the block with all individual forecasts
-        beta_hat = np.dot(
-            np.linalg.inv(np.dot(np.transpose(boot_X), boot_X)),
-            np.dot(np.transpose(boot_X), boot_y)
+    # pre-test
+    # estimate OLS on the block filled sample with all individual forecasts
+    boot_X_t = np.transpose(boot_X, axes=(0, 2, 1))
+    beta_hat = np.matmul(
+            np.linalg.inv(np.matmul(boot_X_t, boot_X)),
+            np.matmul(boot_X_t, boot_y)
             )
 
-        # residuals
-        epsilon = boot_y - np.dot(boot_X, beta_hat)
+    # residuals
+    epsilon = boot_y - np.matmul(boot_X, beta_hat)
 
-        # compute the absolute t-statistics
-        # compute S
-        S_sum = np.full((K, K), 0, dtype=float)
-        for e in range(p):
-            for f in range(m):
-                for g in range(m):
+    # compute the absolute t-statistics
+    # compute S
+    S_sum = np.full((B, K, K), 0, dtype=float)
+    for e in range(p):
+        for f in range(m):
+            for g in range(m):
 
-                    F_f = boot_X[e*m + f, :][:, np.newaxis]
-                    F_g = boot_X[e*m + g, :][:, np.newaxis]
-                    eps_f = epsilon[e*m + f]
-                    eps_g = epsilon[e*m + g]
-                    S_sum += np.dot(F_f * eps_f, np.transpose(F_g * eps_g))
+                F_f = boot_X[:, e*m + f, :][:, :, np.newaxis]
+                F_g = boot_X[:, e*m + g, :][:, :, np.newaxis]
+                eps_f = epsilon[:, e*m + f][:, np.newaxis]
+                eps_g = epsilon[:, e*m + g][:, np.newaxis]
+                S_sum += np.matmul(
+                        np.multiply(F_f, eps_f),
+                        np.transpose(np.multiply(F_g, eps_g), axes=(0, 2, 1))
+                        )
 
-        S = S_sum / (p*m)
+    S = S_sum / (p*m)
 
-        # compute H
-        H_sum = np.full((K, K), 0, dtype=float)
-        for e in range(p):
-            for f in range(m):
+    # compute H
+    H_sum = np.full((B, K, K), 0, dtype=float)
+    for e in range(p):
+        for f in range(m):
 
-                F_f = boot_X[e*m + f, :][:, np.newaxis]
-                H_sum += np.dot(F_f, np.transpose(F_f))
+            F_f = boot_X[:, e*m + f, :][:, :, np.newaxis]
+            H_sum += np.matmul(F_f, np.transpose(F_f, axes=(0, 2, 1)))
 
-        H = H_sum / (p*m)
-        H_inv = np.linalg.inv(H)
+    H = H_sum / (p*m)
+    H_inv = np.linalg.inv(H)
 
-        # variances
-        beta_var = np.diag(
-                1/np.sqrt(T) * np.linalg.multi_dot([H_inv, S, H_inv])
-                )
+    # variances
+    beta_var = np.diagonal(
+            1/np.sqrt(T) * np.matmul(np.matmul(H_inv, S), H_inv),
+            axis1=1, axis2=2
+            )[:, :, np.newaxis]
 
-        # near singularity may cause negative variance issues
-        if (beta_var > 0).all():
+    # near singularity may cause negative variance issues
+    beta_var = np.abs(beta_var)
+    # t-statistics
+    t_stats_abs = np.abs(np.divide(beta_hat, np.sqrt(beta_var)))
 
-            # t-statistics
-            t_stats_abs = np.abs(beta_hat.flatten() / np.sqrt(beta_var))
+    for i in range(B):
 
-            # variable selection
-            boot_X_sel = boot_X[:, t_stats_abs > 1.96]
+        sel_ind = np.squeeze(t_stats_abs[i] > 1.96)
+        # continue if there is atleas one predictor
+        if np.sum(sel_ind) > 0:
+
+            boot_X_sel_t = boot_X[i, :, sel_ind]
+            boot_X_sel = np.transpose(boot_X_sel_t)
+            boot_y_sel = boot_y[i]
 
             # estimate OLS on the block with the selected forecasts
-            boot_X_sel_t = np.transpose(boot_X_sel)
             gamma_hat = np.linalg.multi_dot(
                     [np.linalg.inv(np.dot(boot_X_sel_t, boot_X_sel)),
-                     boot_X_sel_t, boot_y])
+                     boot_X_sel_t, boot_y_sel])
 
             # forecast out-of-sample
             pred_mat[:, i] = np.dot(
-                    df_test.iloc[:, t_stats_abs > 1.96].values,
+                    df_test.iloc[:, sel_ind].values,
                     gamma_hat
                     ).flatten()
 
@@ -1691,7 +1692,7 @@ def Componentwise_Boosting(df_train, df_test, nu):
             {"Componentwise Boosting":  psi_test.flatten()},
             index=df_test.index
             )
-
+    
     return df_pred
 
 

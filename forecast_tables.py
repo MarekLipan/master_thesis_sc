@@ -58,14 +58,14 @@ def create_acc_table(df, w):
                        "Principal Component Forecast (BIC)",
                        "Empirical Bayes Estimator",
                        "Kappa-Shrinkage",
-                       "Two-Step Egalitarian LASSO",
-                       "BMA (Marginal Likelihood)",
-                       "BMA (Predictive Likelihood)",
-                       "ANN",
-                       "EP-NN",
-                       "Bagging",
-                       "Componentwise Boosting",
-                       "AdaBoost"
+                       #"Two-Step Egalitarian LASSO",
+                       #"BMA (Marginal Likelihood)",
+                       #"BMA (Predictive Likelihood)",
+                       #"ANN",
+                       #"EP-NN",
+                       "Bagging"#,
+                       #"Componentwise Boosting",
+                       #"AdaBoost"
                        ])
 
     # define dimensions
@@ -116,17 +116,17 @@ def create_acc_table(df, w):
                 cm.Principal_Component_Forecast(df_train, df_test, "BIC"),
                 cm.Empirical_Bayes_Estimator(df_train, df_test),
                 cm.Kappa_Shrinkage(df_train, df_test, kappa=0.5),
-                cm.Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv=5),
-                cm.BMA_Marginal_Likelihood(df_train, df_test, iterations=60000,
-                                           burnin=10000, p_1=0.5),
-                cm.BMA_Predictive_Likelihood(df_train, df_test,
-                                             iterations=60000, burnin=10000,
-                                             p_1=0.5, l_share=0.7),
-                cm.ANN(df_train, df_test),
-                cm.EP_NN(df_train, df_test, sigma=0.05, gen=1000, n=20),
-                cm.Bagging(df_train, df_test, B=1000),
-                cm.Componentwise_Boosting(df_train, df_test, nu=0.1),
-                cm.AdaBoost(df_train, df_test, phi=0.2)
+                #cm.Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv=5),
+                #cm.BMA_Marginal_Likelihood(df_train, df_test, iterations=6000,
+                #                          burnin=1000, p_1=0.5),
+                #cm.BMA_Predictive_Likelihood(df_train, df_test,
+                #                             iterations=6000, burnin=1000,
+                #                            p_1=0.5, l_share=0.7),
+                #cm.ANN(df_train, df_test),
+                #cm.EP_NN(df_train, df_test, sigma=0.05, gen=500, n=20),
+                cm.Bagging(df_train, df_test, B=1000)#,
+                #cm.Componentwise_Boosting(df_train, df_test, nu=0.1),
+                #cm.AdaBoost(df_train, df_test, phi=0.2)
                 ], axis=1).values[0]
 
     # compute and store accuracy measures for the combined forecasts
