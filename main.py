@@ -6,7 +6,6 @@ This script is used to run the individual scripts.
 """
 
 import pandas as pd
-import numpy as np
 
 # global paths
 data_path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
@@ -53,6 +52,5 @@ df = spf_bal_RGDP_1Y
 w= 40
 
 # parameters for development of new combining methods
-B=1000
 
 # END OF FILE

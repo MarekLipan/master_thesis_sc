@@ -14,14 +14,70 @@ import accuracy_measures as am
 from pylatex import Table, Tabular
 
 
-def create_acc_table(df, w):
+def run_comb_methods(df_train, df_test):
+    """
+    The function runs all of the combination methods for a given rolling window
+
+    Parameters
+    ----------
+    df_train : DataFrame
+        DataFrame containing the  realized values in the first column and the
+        individual forecasts in the other columns. it is used for training
+        the methods.
+
+    df_test : DataFrame
+        DataFrame containing the individual forecasts in columns. It is used
+        for out-of-sample forecasting
+
+
+    Returns
+    -------
+    Ndarray
+        Array of forecasts produced from the combination methods.
+    """
+    # combine and forecast
+    fcts = pd.concat([
+            cm.Equal_Weights(df_test),
+            cm.Bates_Granger_1(df_train, df_test, nu=40),
+            cm.Bates_Granger_2(df_train, df_test, nu=40),
+            cm.Bates_Granger_3(df_train, df_test, nu=40, alpha=0.6),
+            cm.Bates_Granger_4(df_train, df_test, W=1.5),
+            cm.Bates_Granger_5(df_train, df_test, W=1.5),
+            cm.Granger_Ramanathan_1(df_train, df_test),
+            cm.Granger_Ramanathan_2(df_train, df_test),
+            cm.Granger_Ramanathan_3(df_train, df_test),
+            cm.AFTER(df_train, df_test, lambd=0.15),
+            cm.Median_Forecast(df_test),
+            cm.Trimmed_Mean_Forecast(df_test, alpha=0.05),
+            cm.PEW(df_train, df_test),
+            cm.Principal_Component_Forecast(df_train, df_test, "single"),
+            cm.Principal_Component_Forecast(df_train, df_test, "AIC"),
+            cm.Principal_Component_Forecast(df_train, df_test, "BIC"),
+            cm.Empirical_Bayes_Estimator(df_train, df_test),
+            cm.Kappa_Shrinkage(df_train, df_test, kappa=0.5),
+            cm.Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv=5),
+            cm.BMA_Marginal_Likelihood(df_train, df_test, iterations=6000,
+                                       burnin=1000, p_1=0.5),
+            cm.BMA_Predictive_Likelihood(df_train, df_test,
+                                         iterations=6000, burnin=1000,
+                                         p_1=0.5, l_share=0.7),
+            cm.ANN(df_train, df_test),
+            cm.EP_NN(df_train, df_test, sigma=0.05, gen=500, n=20),
+            cm.Bagging(df_train, df_test, B=1000),
+            cm.Componentwise_Boosting(df_train, df_test, nu=0.1),
+            cm.AdaBoost(df_train, df_test, phi=0.2)
+            ], axis=1).values[0]
+
+    return fcts
+
+
+def create_acc_table(df, w, proc):
     """
     The function creates table of forecasts accuracy for basic forecast
     comparison.
 
     The used measures of accuracy are Root Mean Square Error (RMSE), Mean
     Absolute Error (MAE) and Mean Absolute Percentage Error (MAPE).
-
 
     Parameters
     ----------
@@ -32,10 +88,13 @@ def create_acc_table(df, w):
     w : Integer
         Integer indicating the size of the training window.
 
+    proc : String
+        Computed using either a "single" or "multiple" processes.
+
 
     Returns
     -------
-    String
+    N
         String for creating the basic forecast accuracy table in latex
     """
 
@@ -58,14 +117,14 @@ def create_acc_table(df, w):
                        "Principal Component Forecast (BIC)",
                        "Empirical Bayes Estimator",
                        "Kappa-Shrinkage",
-                       #"Two-Step Egalitarian LASSO",
-                       #"BMA (Marginal Likelihood)",
-                       #"BMA (Predictive Likelihood)",
-                       #"ANN",
-                       #"EP-NN",
-                       "Bagging"#,
-                       #"Componentwise Boosting",
-                       #"AdaBoost"
+                       "Two-Step Egalitarian LASSO",
+                       "BMA (Marginal Likelihood)",
+                       "BMA (Predictive Likelihood)",
+                       "ANN",
+                       "EP-NN",
+                       "Bagging",
+                       "Componentwise Boosting",
+                       "AdaBoost"
                        ])
 
     # define dimensions
@@ -78,7 +137,7 @@ def create_acc_table(df, w):
     measures = np.array(["RMSE", "MAE", "MAPE"])
     M = measures.size
 
-    # initialize table to fill in forecasts, accuracy measures, realized values
+    # initialize tables to fill in forecasts,accuracy measures, realized values
     fcts_table = pd.DataFrame(data=np.full((C, oos_T), 0, dtype=float),
                               index=comb_m)
     acc_table = pd.DataFrame(data=np.full((C, M), 0, dtype=float),
@@ -86,7 +145,6 @@ def create_acc_table(df, w):
                              index=comb_m)
     real_val = np.full(oos_T, 0, dtype=float)
 
-    # compute and store one-step-ahead forecasting
     for i in range(oos_T):
 
         # define training and testing sets
@@ -96,38 +154,16 @@ def create_acc_table(df, w):
         # save realized (true) value
         real_val[i] = df.iloc[(w+i), 0]
 
-        # combine and forecast
-        fcts_table.iloc[:, i] = pd.concat([
-                cm.Equal_Weights(df_test),
-                cm.Bates_Granger_1(df_train, df_test, nu=40),
-                cm.Bates_Granger_2(df_train, df_test, nu=40),
-                cm.Bates_Granger_3(df_train, df_test, nu=40, alpha=0.6),
-                cm.Bates_Granger_4(df_train, df_test, W=1.5),
-                cm.Bates_Granger_5(df_train, df_test, W=1.5),
-                cm.Granger_Ramanathan_1(df_train, df_test),
-                cm.Granger_Ramanathan_2(df_train, df_test),
-                cm.Granger_Ramanathan_3(df_train, df_test),
-                cm.AFTER(df_train, df_test, lambd=0.15),
-                cm.Median_Forecast(df_test),
-                cm.Trimmed_Mean_Forecast(df_test, alpha=0.05),
-                cm.PEW(df_train, df_test),
-                cm.Principal_Component_Forecast(df_train, df_test, "single"),
-                cm.Principal_Component_Forecast(df_train, df_test, "AIC"),
-                cm.Principal_Component_Forecast(df_train, df_test, "BIC"),
-                cm.Empirical_Bayes_Estimator(df_train, df_test),
-                cm.Kappa_Shrinkage(df_train, df_test, kappa=0.5),
-                #cm.Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv=5),
-                #cm.BMA_Marginal_Likelihood(df_train, df_test, iterations=6000,
-                #                          burnin=1000, p_1=0.5),
-                #cm.BMA_Predictive_Likelihood(df_train, df_test,
-                #                             iterations=6000, burnin=1000,
-                #                            p_1=0.5, l_share=0.7),
-                #cm.ANN(df_train, df_test),
-                #cm.EP_NN(df_train, df_test, sigma=0.05, gen=500, n=20),
-                cm.Bagging(df_train, df_test, B=1000)#,
-                #cm.Componentwise_Boosting(df_train, df_test, nu=0.1),
-                #cm.AdaBoost(df_train, df_test, phi=0.2)
-                ], axis=1).values[0]
+        # combine and forecast in a single process
+        if proc == "single":
+            fcts_table.iloc[:, i] = run_comb_methods(df_train, df_test)
+
+    # combine and forecast in multiple processes (must be prepared)
+    if proc == "multiple":
+
+        data_path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
+        load_path = data_path + "Multiproc/MP_data.pkl"
+        fcts_table = pd.read_pickle(load_path).transpose()
 
     # compute and store accuracy measures for the combined forecasts
     for i in range(C):
