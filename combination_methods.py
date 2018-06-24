@@ -1492,7 +1492,7 @@ def Bagging(df_train, df_test, B):
 
     # create bootstrap samples by sampling blocks
     boot_ind = np.random.randint(p, size=(B, p))
-    boot_sample = np.reshape(blocks[boot_ind, :, :], (B, p*m, 22))
+    boot_sample = np.reshape(blocks[boot_ind, :, :], (B, p*m, K+1))
     boot_X = boot_sample[:, :, 1:]
     boot_y = boot_sample[:, :, 0][:, :, np.newaxis]
 

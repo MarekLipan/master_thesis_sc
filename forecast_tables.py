@@ -71,7 +71,7 @@ def run_comb_methods(df_train, df_test):
     return fcts
 
 
-def create_acc_table(df, w, proc):
+def create_acc_table(df, w, proc, df_name):
     """
     The function creates table of forecasts accuracy for basic forecast
     comparison.
@@ -90,6 +90,10 @@ def create_acc_table(df, w, proc):
 
     proc : String
         Computed using either a "single" or "multiple" processes.
+
+    df_name : String
+        Name of the dataset. It is used for multiple processes, when loading
+        the corresponding pickled file.
 
 
     Returns
@@ -162,7 +166,7 @@ def create_acc_table(df, w, proc):
     if proc == "multiple":
 
         data_path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
-        load_path = data_path + "Multiproc/MP_data.pkl"
+        load_path = data_path + "Multiproc/MP_" + df_name + ".pkl"
         fcts_table = pd.read_pickle(load_path).transpose()
 
     # compute and store accuracy measures for the combined forecasts
