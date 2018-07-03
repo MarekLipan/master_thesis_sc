@@ -49,8 +49,13 @@ df_train = spf_bal_RGDP_1Y.iloc[:40, :]
 df_test = spf_bal_RGDP_1Y.iloc[40:44, 1:]
 
 df = spf_bal_RGDP_1Y
-w= 40
+w = 40
 
 # parameters for development of new combining methods
+MinRPT = 0.0001
+MaxRPT_r1 = 0.9
+MaxRPT = 0.01
+alpha = 1
+no_rounds = 30
 
 # END OF FILE

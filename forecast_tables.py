@@ -65,7 +65,9 @@ def run_comb_methods(df_train, df_test):
             cm.EP_NN(df_train, df_test, sigma=0.05, gen=500, n=20),
             cm.Bagging(df_train, df_test, B=1000),
             cm.Componentwise_Boosting(df_train, df_test, nu=0.1),
-            cm.AdaBoost(df_train, df_test, phi=0.2)
+            cm.AdaBoost(df_train, df_test, phi=0.2),
+            cm.cAPM_Constant(df_train, df_test, MaxRPT_r1=0.9, MaxRPT=0.01,
+                             no_rounds=30)
             ], axis=1).values[0]
 
     return fcts
@@ -128,7 +130,8 @@ def create_acc_table(df, w, proc, df_name):
                        "EP-NN",
                        "Bagging",
                        "Componentwise Boosting",
-                       "AdaBoost"
+                       "AdaBoost",
+                       "c-APM (Constant)"
                        ])
 
     # define dimensions

@@ -1692,7 +1692,7 @@ def Componentwise_Boosting(df_train, df_test, nu):
             {"Componentwise Boosting":  psi_test.flatten()},
             index=df_test.index
             )
-    
+
     return df_pred
 
 
@@ -1776,4 +1776,98 @@ def AdaBoost(df_train, df_test, phi):
             )
 
     return df_pred
+
+
+def cAPM_Constant(df_train, df_test, MaxRPT_r1, MaxRPT, no_rounds):
+    """
+    The continuous artificial prediction market with constant betting.
+
+    """
+
+    # number of periods in samples
+    T = df_train.shape[0]
+    T_test = df_test.shape[0]
+
+    # number of agents
+    K = df_test.shape[1]
+
+    # individual forecasts
+    F = df_train.iloc[:, 1:].values
+    F_test = df_test.iloc[:, :].values
+
+    # outcomes
+    outcomes = df_train.iloc[:, 0].values
+
+    # initialize matrices containing all predictions and bets
+    pred_mat = np.full((no_rounds, K), np.nan, dtype=float)
+    bet_mat = np.full((no_rounds, K), np.nan, dtype=float)
+
+    # budget initialization
+    budgets = np.full(K, 1, dtype=float)
+
+    # training the market
+    for i in range(T):
+
+        # first round betting
+        pred_mat[0, :] = F[i, :]
+        bet_mat[0, :] = budgets * MaxRPT_r1
+        budgets = budgets * (1-MaxRPT_r1)
+
+        # rest of rounds betting
+        for j in range(1, no_rounds):
+
+            pred_mat[j, :] = F[i, :]
+            bet_mat[j, :] = budgets * MaxRPT
+            budgets = budgets * (1-MaxRPT)
+
+        # use IQR to determine outlier error threshold
+        abs_errors = np.abs(outcomes[i] - pred_mat)
+        Q3, Q1 = np.percentile(abs_errors, [75, 25])
+        IQR = Q3 - Q1
+        oet = Q3 + (IQR*1.5)
+
+        # reward the agents based on accuracy of their predictions
+        accuracy = np.maximum(100 * (1 - abs_errors/oet), 1)
+        score = np.log(accuracy)
+        revenue = np.multiply(score, bet_mat)
+        budgets = budgets + np.sum(revenue, axis=0)
+
+        # rescaling the budget (only for computational reasons)
+        budgets = budgets/np.sum(budgets)
+
+    # using the market for the out-of-sample predictions
+    pred = np.full(T_test, np.nan, dtype=float)
+    for i in range(T_test):
+
+        # reset test budget
+        budgets_test = np.copy(budgets)
+
+        # first round betting
+        pred_mat[0, :] = F_test[i, :]
+        bet_mat[0, :] = budgets_test * MaxRPT_r1
+        budgets_test = budgets_test * (1-MaxRPT_r1)
+
+        # rest of rounds betting
+        for j in range(1, no_rounds):
+
+            pred_mat[j, :] = F_test[i, :]
+            bet_mat[j, :] = budgets_test * MaxRPT
+            budgets_test = budgets_test * (1-MaxRPT)
+
+        # final round market prediction is the c-APM prediction
+        pred[i] = np.dot(
+                pred_mat[no_rounds-1, :],
+                bet_mat[no_rounds-1, :])/np.sum(bet_mat[no_rounds-1, :])
+
+    # output
+    df_pred = pd.DataFrame(
+            {"c-APM (Constant)":  pred},
+            index=df_test.index
+            )
+
+    return df_pred
+
+#def cAPM_Q_learning(df_train, df_test, MinRPT, MaxRPT_r1, MaxRPT, alpha,
+#                  no_rounds):
+
 # THE END OF MODULE
