@@ -67,7 +67,9 @@ def run_comb_methods(df_train, df_test):
             cm.Componentwise_Boosting(df_train, df_test, nu=0.1),
             cm.AdaBoost(df_train, df_test, phi=0.2),
             cm.cAPM_Constant(df_train, df_test, MaxRPT_r1=0.9, MaxRPT=0.01,
-                             no_rounds=30)
+                             no_rounds=30),
+            cm.cAPM_Q_learning(df_train, df_test, MinRPT=0.0001, MaxRPT_r1=0.9,
+                               MaxRPT=0.01, alpha=0.7, no_rounds=30)
             ], axis=1).values[0]
 
     return fcts
@@ -131,7 +133,8 @@ def create_acc_table(df, w, proc, df_name):
                        "Bagging",
                        "Componentwise Boosting",
                        "AdaBoost",
-                       "c-APM (Constant)"
+                       "c-APM (Constant)",
+                       "c-APM (Q-learning)"
                        ])
 
     # define dimensions

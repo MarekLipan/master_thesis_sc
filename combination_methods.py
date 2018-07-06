@@ -1780,7 +1780,7 @@ def AdaBoost(df_train, df_test, phi):
 
 def cAPM_Constant(df_train, df_test, MaxRPT_r1, MaxRPT, no_rounds):
     """
-    The continuous artificial prediction market with constant betting.
+    The continuous artificial prediction markets with constant betting.
 
     """
 
@@ -1867,7 +1867,268 @@ def cAPM_Constant(df_train, df_test, MaxRPT_r1, MaxRPT, no_rounds):
 
     return df_pred
 
-#def cAPM_Q_learning(df_train, df_test, MinRPT, MaxRPT_r1, MaxRPT, alpha,
-#                  no_rounds):
+
+def cAPM_Q_learning(df_train, df_test, MinRPT, MaxRPT_r1, MaxRPT, alpha,
+                    no_rounds):
+
+    """
+    The continuous artificial prediction markets with agents having adaptive
+    strategies and utilizing the wisdom of the crowd via Q-learning.
+
+    """
+    # number of periods in samples
+    T = df_train.shape[0]
+    T_test = df_test.shape[0]
+
+    # number of agents
+    K = df_test.shape[1]
+
+    # individual forecasts
+    F = df_train.iloc[:, 1:].values
+    F_test = df_test.iloc[:, :].values
+
+    # outcomes
+    outcomes = df_train.iloc[:, 0].values
+
+    # initialize matrices containing all predictionsa and bets
+    pred_mat = np.full((no_rounds, K), np.nan, dtype=float)
+    bet_mat = np.full((no_rounds, K), np.nan, dtype=float)
+
+    # initialize vector containing estimated errors
+    est_abs_error = np.full((no_rounds, K), np.nan, dtype=float)
+
+    # initialize state identification matrix
+    state_mat = np.full((no_rounds, K, 3), False, dtype=bool)
+
+    # confidence in the crowd
+    delta_mat = np.full((no_rounds, K, 3), 0, dtype=float)
+
+    # budget initialization
+    budgets = np.full(K, 1, dtype=float)
+    start_budgets = np.full((no_rounds, K), 1, dtype=float)
+
+    # market prediction vector
+    market_pred = np.full(no_rounds, np.nan, dtype=float)
+
+    # initialize vectors for storing error cluster means and counts
+    # (small, medium, large)
+    error_cl_mean = np.full(3, np.nan, dtype=float)
+    error_cl_count = np.full(3, 0, dtype=float)
+    no_errors = no_rounds*K
+
+    # matrix containing the Q value for each action and state
+    # dimensions: action, round, agent, state
+    Q_val = np.full((2, no_rounds, K, 3), 0, dtype=float)
+
+    # matrix containing starting predictions (before action) for Q-updates
+    pred_mat_upd = np.full((2, no_rounds, K, 3), 0, dtype=float)
+
+    # matrix containing market predictions shifted by one period for Q-updates
+    market_pred_upd = np.full((no_rounds, K, 3), 0, dtype=float)
+
+    ##############################
+    # training the market - START#
+    ##############################
+    for i in range(T):
+
+        # first round betting
+        pred_mat[0, :] = F[i, :]
+        current_bets = budgets * MaxRPT_r1
+        bet_mat[0, :] = current_bets
+        budgets -= current_bets
+        market_pred[0] = np.dot(
+                pred_mat[0, :], bet_mat[0, :]
+                )/np.sum(bet_mat[0, :])
+
+        # rest of rounds betting
+        if i == 0:
+            for j in range(1, no_rounds):
+
+                pred_mat[j, :] = F[i, :]
+                current_bets = budgets * MaxRPT
+                bet_mat[j, :] = current_bets
+                budgets -= current_bets
+
+        else:
+            for j in range(1, no_rounds):
+
+                # screen shot start of round budgets for Q-val updates later
+                np.copyto(start_budgets[j, :], budgets)
+
+                # base for current invididual predictions are the last round
+                # individual prediction
+                np.copyto(pred_mat[j, :], pred_mat[j-1, :])
+
+                # error estimates using market prediction of last round
+                est_error = market_pred[j-1] - pred_mat[j, :]
+                est_abs_error = np.abs(est_error)
+
+                # identify in which state the agent is
+                cl_dist = np.abs(error_cl_mean[:, np.newaxis] - est_abs_error)
+                visited_state = np.swapaxes(np.amin(cl_dist, axis=0) == cl_dist,
+                                            0, 1)
+                state_mat[j, :, :] = visited_state
+
+                # choose action: 0-preserve, 1-change prediction
+                decision = np.argmax(Q_val[:, j, visited_state], axis=0)
+                pred_mat[j, :] += decision * delta_mat[j, visited_state] * est_error
+
+                # reestime error after the actions are taken
+                est_error = market_pred[j-1] - pred_mat[j, :]
+                est_abs_error = np.abs(est_error)
+
+                # estimate score
+                accuracy_prime = np.maximum(100 * (1 - est_abs_error/oet), 1)
+                score_prime = np.log(accuracy_prime)
+
+                # bet according to estimated score
+                worth_to_bet = score_prime >= 1
+                current_bets = (
+                        worth_to_bet * MaxRPT + ~worth_to_bet * MinRPT
+                        ) * budgets
+                bet_mat[j, :] = current_bets
+                budgets -= current_bets
+
+                # store the market prediction at the end of the round
+                market_pred[j] = np.dot(
+                        pred_mat[j, :], bet_mat[j, :])/np.sum(bet_mat[j, :])
+
+        # absolute errors from the current market
+        abs_errors = np.abs(outcomes[i] - pred_mat)
+        abs_errors_flat = abs_errors.flatten()
+
+        # recompute error clusters (small, medium, large)
+        error_order = np.random.choice(no_errors, no_errors, replace=False)
+
+        if i == 0:
+            # initialize error clusters
+            for k in range(3):
+                error_cl_mean[k] = abs_errors_flat[error_order[k]]
+                error_cl_count[k] += 1
+            for k in range(3, no_errors):
+                inc_error = abs_errors_flat[error_order[k]]
+                closest_cl = (np.abs(error_cl_mean - inc_error)).argmin()
+                error_cl_mean[closest_cl] = (error_cl_count[closest_cl] * error_cl_mean[closest_cl] + inc_error) / (error_cl_count[closest_cl] + 1)
+                error_cl_count[closest_cl] += 1
+                # order: small, medium, large
+                error_cl_mean = np.sort(error_cl_mean)
+                
+            # initialize delta matrix (confidence in the crowd)
+
+        else:
+            for k in range(no_errors):
+                inc_error = abs_errors_flat[error_order[k]]
+                closest_cl = (np.abs(error_cl_mean - inc_error)).argmin()
+                error_cl_mean[closest_cl] = (error_cl_count[closest_cl] * error_cl_mean[closest_cl] + inc_error) / (error_cl_count[closest_cl] + 1)
+                error_cl_count[closest_cl] += 1
+
+        # use IQR to determine outlier error threshold
+        Q3, Q1 = np.percentile(abs_errors, [75, 25])
+        IQR = Q3 - Q1
+        oet = Q3 + (IQR*1.5)
+
+        # compute revenues of the agents based on accuracy of their predictions
+        accuracy = np.maximum(100 * (1 - abs_errors/oet), 1)
+        score = np.log(accuracy)
+        revenue = np.multiply(score, bet_mat)
+
+        # reward agents and rescale the budget (for computational reasons)
+        budgets = budgets + np.sum(revenue, axis=0)
+        budgets = budgets/np.sum(budgets)
+
+        # update Q-values and deltas (possible after the first market)
+        if i > 0:
+            # update Q-values
+            pred_mat_upd[:, 1:, :, :] = pred_mat[np.newaxis, :-1, :, np.newaxis]
+            market_pred_upd[1:, :, :] = market_pred[:-1, np.newaxis, np.newaxis]
+            pred_mat_upd[1, :, :, :] += delta_mat * (market_pred_upd - pred_mat_upd[1, :, :, :])
+            abs_errors_upd = np.abs(outcomes[i] - pred_mat_upd)
+            accuracy_upd = np.maximum(100 * (1 - abs_errors_upd/oet), 1)
+            score_upd = np.log(accuracy_upd)
+            worth_to_bet_upd = score_upd >= 1
+            bet_mat_upd = np.multiply(
+                    worth_to_bet_upd * MaxRPT + ~worth_to_bet_upd * MinRPT,
+                    start_budgets[np.newaxis, :, :, np.newaxis]
+                    )
+            potential_rev = np.multiply(score_upd, bet_mat_upd)
+            Q_val += alpha*(potential_rev*state_mat[np.newaxis, :, :, :] - Q_val)
+            # update deltas (confidence in the wisdom of the crowd)
+            num = outcomes[i]-pred_mat
+            denum = market_pred[:, np.newaxis]-pred_mat
+            # prevent division by zero
+            denum[denum == 0] = 1e-10
+            experience = np.clip(num/denum, a_min=0, a_max=1)
+            delta_mat += alpha*(experience[:, :, np.newaxis]*state_mat - delta_mat)
+            
+       ############################
+       # training the market - END#
+       ############################   
+
+    # using the market for the out-of-sample predictions
+    pred = np.full(T_test, np.nan, dtype=float)
+    for i in range(T_test):
+
+        # reset to the trained market budget
+        budgets_test = np.copy(budgets)
+
+        # first round betting
+        pred_mat[0, :] = F_test[i, :]
+        current_bets = budgets_test * MaxRPT_r1
+        bet_mat[0, :] = current_bets
+        budgets_test -= current_bets
+        market_pred[0] = np.dot(
+                pred_mat[0, :], bet_mat[0, :]
+                )/np.sum(bet_mat[0, :])
+
+        # rest of rounds betting
+        for j in range(1, no_rounds):
+
+            # base for current invididual predictions are the last round
+            # individual prediction
+            np.copyto(pred_mat[j, :], pred_mat[j-1, :])
+
+            # error estimates using market prediction of last round
+            est_error = market_pred[j-1] - pred_mat[j, :]
+            est_abs_error = np.abs(est_error)
+
+            # identify in which state the agent is
+            cl_dist = np.abs(error_cl_mean[:, np.newaxis] - est_abs_error)
+            visited_state = np.swapaxes(
+                    np.amin(cl_dist, axis=0) == cl_dist, 0, 1)
+
+            # choose action: 0-preserve, 1-change prediction
+            decision = np.argmax(Q_val[:, j, visited_state], axis=0)
+            pred_mat[j, :] += decision * delta_mat[j, visited_state]*est_error
+
+            # reestime error after the actions are taken
+            est_error = market_pred[j-1] - pred_mat[j, :]
+            est_abs_error = np.abs(est_error)
+
+            # estimate score
+            accuracy_prime = np.maximum(100 * (1 - est_abs_error/oet), 1)
+            score_prime = np.log(accuracy_prime)
+
+            # bet according to estimated score
+            worth_to_bet = score_prime >= 1
+            current_bets = (
+                        worth_to_bet * MaxRPT + ~worth_to_bet * MinRPT
+                        ) * budgets_test
+            bet_mat[j, :] = current_bets
+            budgets_test -= current_bets
+
+            # store the market prediction at the end of the round
+            market_pred[j] = np.dot(
+                    pred_mat[j, :], bet_mat[j, :])/np.sum(bet_mat[j, :])
+
+        # final round market prediction is the c-APM prediction
+        pred[i] = market_pred[no_rounds-1]
+
+    # output
+    df_pred = pd.DataFrame(
+            {"c-APM (Q-learning)":  pred},
+            index=df_test.index
+            )
+
+    return df_pred
 
 # THE END OF MODULE

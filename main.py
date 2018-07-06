@@ -55,7 +55,7 @@ w = 40
 MinRPT = 0.0001
 MaxRPT_r1 = 0.9
 MaxRPT = 0.01
-alpha = 1
+alpha = 0.1
 no_rounds = 30
 
 # END OF FILE
