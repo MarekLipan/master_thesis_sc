@@ -22,6 +22,7 @@ np.random.seed(444)
 acc_table_RGDP_1Y = ft.create_acc_table(df=spf_bal_RGDP_1Y, w=40,
                                         proc="multiple",
                                         df_name="spf_bal_RGDP_1Y")
+
 acc_table_RGDP_2Y = ft.create_acc_table(df=spf_bal_RGDP_2Y, w=40,
                                         proc="multiple",
                                         df_name="spf_bal_RGDP_2Y")
