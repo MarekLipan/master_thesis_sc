@@ -273,19 +273,22 @@ def gen_tex_table(tbl, cap, file_name, r):
     # number of combination methods + additional rows
     R = tbl.shape[0]
 
+    # specify format
+    fmt = "{:." + str(r) + "f}"
+
     # fill in the rows for each combination method (-3 for individuals)
     for i in range(R-3):
 
-        tabr.add_row([tbl.index[i]] + list(np.around(tbl.iloc[i, :],
-                     decimals=r)))
+        tabr.add_row([tbl.index[i]] + [
+                fmt.format(item) for item in tbl.iloc[i, :]])
 
     tabr.add_hline()
 
     # additional rows
     for i in range(R-3, R):
 
-        tabr.add_row([tbl.index[i]] + list(np.around(tbl.iloc[i, :],
-                     decimals=r)))
+        tabr.add_row([tbl.index[i]] + [
+                fmt.format(item) for item in tbl.iloc[i, :]])
 
     # end of table
     tabr.add_hline()
