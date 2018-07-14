@@ -12,6 +12,8 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 from pylatex import Table, Tabular
+from statsmodels.graphics.tsaplots import plot_acf
+from statsmodels.graphics.tsaplots import plot_pacf
 
 # path to where the figures and tables are stored
 fig_path = "C:/Users/Marek/Dropbox/Master_Thesis/Latex/Figures/"
@@ -94,9 +96,9 @@ fig.savefig(fig_path + "bond_rvol_series.pdf", bbox_inches='tight')
 # DESCRIPTIVE STATISTICS TABLE#
 ###############################
 
-ds_stats = ["Mean", "Median", "Mode", "Standard Deviation", "Variance",
+ds_stats = ["Mean", "Median", "Mode", "Std. Dev.", "Variance",
             "Minimum", "Maximum", "Kurtosis", "Skewness"]
-tickers = list(ret)
+tickers = ['TU (2 Year)', 'FV (5 Year)', 'TY (10 Year)', 'US (30 Year)']
 
 
 # RETURNS
@@ -115,7 +117,7 @@ ret_desc_stat.iloc[8, :] = stats.skew(ret.values, axis=0)
 
 # create tabule object
 tabl = Table()
-tabl.add_caption("Returns -- Descriptive Statistics")
+tabl.add_caption("Descriptive statistics of returns of U.S. government bonds with different maturities.")
 # create tabular object
 tabr = Tabular(table_spec="lcccc")
 tabr.add_hline()
@@ -151,7 +153,7 @@ rvol_desc_stat.iloc[8, :] = stats.skew(rvol.values, axis=0)
 
 # create tabule object
 tabl = Table()
-tabl.add_caption("Realized Volatility -- Descriptive Statistics")
+tabl.add_caption("Descriptive statistics of realized volatility of U.S. government bonds with different maturities.")
 # create tabular object
 tabr = Tabular(table_spec="lcccc")
 tabr.add_hline()
@@ -170,6 +172,13 @@ tabr.add_hline()
 tabl.append(tabr)
 # export the table
 tabl.generate_tex(tab_path + "bond_rvol_desc_stats")
+
+###########
+# ACF/PACF#
+###########
+
+plot_acf(rvol.iloc[:,3], lags=20)
+plot_pacf(rvol.iloc[:,3], lags=20)
 
 ###############
 # END OF FILE #
