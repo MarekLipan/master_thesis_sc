@@ -10,16 +10,17 @@ forecasting
 
 import pandas as pd
 import numpy as np
+import random
 
 # set the seed for replicability of results
 random.seed(444)
 np.random.seed(444)
 
 # ADF test null: unit root
-adfuller(rvol.iloc[:, 0])
-adfuller(rvol.iloc[:, 1])
-adfuller(rvol.iloc[:, 2])
-adfuller(rvol.iloc[:, 3])
+#adfuller(rvol.iloc[:, 0])
+#adfuller(rvol.iloc[:, 1])
+#adfuller(rvol.iloc[:, 2])
+#adfuller(rvol.iloc[:, 3])
 
 #######################
 # Individual forecasts#
@@ -35,7 +36,7 @@ M = ret.shape[1]
 rw = 1000
 
 # types of individual forecasts
-ind_fcts_colnames = ["RV", "RiskMetrics", "HAR"]
+ind_fcts_colnames = ["RV", "Historical Volatility", "RiskMetrics", "HAR"]
 
 # matrices of individual forecasts - 1 step ahead
 ind_fcts_1_TU = pd.DataFrame(
@@ -113,11 +114,32 @@ ind_fcts_1_US.iloc[:, fct_col] = rvol.iloc[rw:, 3].values
 ind_fcts_5_US.iloc[:, fct_col] = rvol.iloc[rw+4:, 3].values
 ind_fcts_22_US.iloc[:, fct_col] = rvol.iloc[rw+21:, 3].values
 
-####################
-# Historal Variance#
-####################
+######################
+# Historal Volatility#
+######################
+fct_col = ind_fcts_colnames.index("Historical Volatility")
 
-
+# roll window trough the returns
+for t in range(rw, T):
+    hist_vol = np.std(ret.iloc[(t-rw):t, :], ddof=1)
+    
+    # save forecasts
+    # 1 step ahead
+    ind_fcts_1_TU.iloc[t-rw, fct_col] = hist_vol[0]
+    ind_fcts_1_FV.iloc[t-rw, fct_col] = hist_vol[1]
+    ind_fcts_1_TY.iloc[t-rw, fct_col] = hist_vol[2]
+    ind_fcts_1_US.iloc[t-rw, fct_col] = hist_vol[3]
+    if (t-rw) < (T-rw-4):  # 5 step ahead
+        ind_fcts_5_TU.iloc[t-rw, fct_col] = hist_vol[0]
+        ind_fcts_5_FV.iloc[t-rw, fct_col] = hist_vol[1]
+        ind_fcts_5_TY.iloc[t-rw, fct_col] = hist_vol[2]
+        ind_fcts_5_US.iloc[t-rw, fct_col] = hist_vol[3]
+    if (t-rw) < (T-rw-21):  # 22 step ahead
+        ind_fcts_22_TU.iloc[t-rw, fct_col] = hist_vol[0]
+        ind_fcts_22_FV.iloc[t-rw, fct_col] = hist_vol[1]
+        ind_fcts_22_TY.iloc[t-rw, fct_col] = hist_vol[2]
+        ind_fcts_22_US.iloc[t-rw, fct_col] = hist_vol[3]
+        
 ##############
 # RiskMetrics#
 ##############
@@ -126,9 +148,9 @@ fct_col = ind_fcts_colnames.index("RiskMetrics")
 RiskMetrics = np.full((T, M), 0, dtype=float)
 
 for t in range(1, T):
-    
+
     RiskMetrics[t, :] = 0.94 * np.copy(RiskMetrics[t-1, :]) + 0.06 * (
-            ret.iloc[t-1, :].values**2)
+            np.sqrt(ret.iloc[t-1, :].values**2))
 
 # out-of-sample forecasting
 # TU
@@ -147,7 +169,7 @@ ind_fcts_22_TY.iloc[:, fct_col] = RiskMetrics[rw:-21:, 2]
 ind_fcts_1_US.iloc[:, fct_col] = RiskMetrics[rw:, 3]
 ind_fcts_5_US.iloc[:, fct_col] = RiskMetrics[rw:-4, 3]
 ind_fcts_22_US.iloc[:, fct_col] = RiskMetrics[rw:-21:, 3]
-    
+
 ######
 # HAR#
 ######
