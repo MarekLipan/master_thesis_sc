@@ -181,30 +181,34 @@ for t in range(rw, T):
 ##############
 fct_col = ind_fcts_colnames.index("RiskMetrics")
 
-RiskMetrics = np.full((T, M), 0, dtype=float)
+for t in range(rw, T):
+    # squared returns
+    RiskMetrics = ret.iloc[(t-rw):t, :].values**2
+    # initialization by historical variance
+    RiskMetrics[0, :] = np.var(ret.iloc[(t-rw):t, :], ddof=1)
+    # EWMA
+    for i in range(1, rw):
+        RiskMetrics[i, :] = 0.94 * np.copy(RiskMetrics[i-1, :]) + (
+                0.06 * np.copy(RiskMetrics[i, :]))
+    # volatility estimate
+    RiskMetrics_vol_fcts = np.sqrt(RiskMetrics[rw-1, :])
 
-for t in range(1, T):
-
-    RiskMetrics[t, :] = 0.94 * np.copy(RiskMetrics[t-1, :]) + 0.06 * (
-            np.sqrt(ret.iloc[t-1, :].values**2))
-
-# out-of-sample forecasting
-# TU
-ind_fcts_1_TU.iloc[:, fct_col] = RiskMetrics[rw:, 0]
-ind_fcts_5_TU.iloc[:, fct_col] = RiskMetrics[rw:-4, 0]
-ind_fcts_22_TU.iloc[:, fct_col] = RiskMetrics[rw:-21:, 0]
-# FV
-ind_fcts_1_FV.iloc[:, fct_col] = RiskMetrics[rw:, 1]
-ind_fcts_5_FV.iloc[:, fct_col] = RiskMetrics[rw:-4, 1]
-ind_fcts_22_FV.iloc[:, fct_col] = RiskMetrics[rw:-21:, 1]
-# TY
-ind_fcts_1_TY.iloc[:, fct_col] = RiskMetrics[rw:, 2]
-ind_fcts_5_TY.iloc[:, fct_col] = RiskMetrics[rw:-4, 2]
-ind_fcts_22_TY.iloc[:, fct_col] = RiskMetrics[rw:-21:, 2]
-# US
-ind_fcts_1_US.iloc[:, fct_col] = RiskMetrics[rw:, 3]
-ind_fcts_5_US.iloc[:, fct_col] = RiskMetrics[rw:-4, 3]
-ind_fcts_22_US.iloc[:, fct_col] = RiskMetrics[rw:-21:, 3]
+    # save forecasts
+    # 1 step ahead
+    ind_fcts_1_TU.iloc[t-rw, fct_col] = RiskMetrics_vol_fcts[0]
+    ind_fcts_1_FV.iloc[t-rw, fct_col] = RiskMetrics_vol_fcts[1]
+    ind_fcts_1_TY.iloc[t-rw, fct_col] = RiskMetrics_vol_fcts[2]
+    ind_fcts_1_US.iloc[t-rw, fct_col] = RiskMetrics_vol_fcts[3]
+    if (t-rw) < (T-rw-4):  # 5 step ahead
+        ind_fcts_5_TU.iloc[t-rw, fct_col] = RiskMetrics_vol_fcts[0]
+        ind_fcts_5_FV.iloc[t-rw, fct_col] = RiskMetrics_vol_fcts[1]
+        ind_fcts_5_TY.iloc[t-rw, fct_col] = RiskMetrics_vol_fcts[2]
+        ind_fcts_5_US.iloc[t-rw, fct_col] = RiskMetrics_vol_fcts[3]
+    if (t-rw) < (T-rw-21):  # 22 step ahead
+        ind_fcts_22_TU.iloc[t-rw, fct_col] = RiskMetrics_vol_fcts[0]
+        ind_fcts_22_FV.iloc[t-rw, fct_col] = RiskMetrics_vol_fcts[1]
+        ind_fcts_22_TY.iloc[t-rw, fct_col] = RiskMetrics_vol_fcts[2]
+        ind_fcts_22_US.iloc[t-rw, fct_col] = RiskMetrics_vol_fcts[3]
 
 ######
 # HAR#
@@ -411,5 +415,24 @@ for c in var_combs:
                 if (t-rw) < (T-rw-21):
                     ind_fcts_22_US.iloc[(t-rw), US_colnames.index(c_vars)] = model_fct[21, c.index(3)]
         
+
+# SAVE THE INDIVIDUAL FORECASTS
+# global paths
+data_path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
+# path to bond DataFrames
+bond_data_path = data_path + "Bonds/"
+# pickle
+ind_fcts_1_TU.to_pickle(bond_data_path + "ind_fcts_1_TU.pkl")
+ind_fcts_5_TU.to_pickle(bond_data_path + "ind_fcts_5_TU.pkl")
+ind_fcts_22_TU.to_pickle(bond_data_path + "ind_fcts_22_TU.pkl")
+ind_fcts_1_FV.to_pickle(bond_data_path + "ind_fcts_1_FV.pkl")
+ind_fcts_5_FV.to_pickle(bond_data_path + "ind_fcts_5_FV.pkl")
+ind_fcts_22_FV.to_pickle(bond_data_path + "ind_fcts_22_FV.pkl")
+ind_fcts_1_TY.to_pickle(bond_data_path + "ind_fcts_1_TY.pkl")
+ind_fcts_5_TY.to_pickle(bond_data_path + "ind_fcts_5_TY.pkl")
+ind_fcts_22_TY.to_pickle(bond_data_path + "ind_fcts_22_TY.pkl")
+ind_fcts_1_US.to_pickle(bond_data_path + "ind_fcts_1_US.pkl")
+ind_fcts_5_US.to_pickle(bond_data_path + "ind_fcts_5_US.pkl")
+ind_fcts_22_US.to_pickle(bond_data_path + "ind_fcts_22_US.pkl")
 
 # END OF FILE
