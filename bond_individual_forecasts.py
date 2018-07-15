@@ -10,7 +10,9 @@ forecasting
 
 import pandas as pd
 import numpy as np
+import itertools
 import random
+from statsmodels.tsa.api import VAR, AR
 
 # set the seed for replicability of results
 random.seed(444)
@@ -35,62 +37,96 @@ M = ret.shape[1]
 # length of the rolling window
 rw = 1000
 
-# types of individual forecasts
-ind_fcts_colnames = ["RV", "Historical Volatility", "RiskMetrics", "HAR"]
+# types of data
+bond_data_colnames = ["TU", "FV", "TY", "US"]
+# column names for VAR model individual forecasts
+# combinations of variables
+var_combs = []
+var_combs_let = []
+for i in range(1, 5):
+    var_combs += list(itertools.combinations([0, 1, 2, 3], i))
+    var_combs_let += list(itertools.combinations(bond_data_colnames, i))
+# transform into lists
+for i in range(len(var_combs)):
+    var_combs[i] = list(var_combs[i])
+    var_combs_let[i] = list(var_combs_let[i])
+# connect VAR names
+for i in range(len(var_combs_let)):
+    var_combs_let
 
+TU_VAR_colnames = []
+FV_VAR_colnames = []
+TY_VAR_colnames = []
+US_VAR_colnames = []
+for i in range(len(var_combs)):
+    if 0 in var_combs[i]:
+        TU_VAR_colnames.append("VAR ("+', '.join(var_combs_let[i])+")")
+    if 1 in var_combs[i]:
+        FV_VAR_colnames.append("VAR ("+', '.join(var_combs_let[i])+")")
+    if 2 in var_combs[i]:
+        TY_VAR_colnames.append("VAR ("+', '.join(var_combs_let[i])+")")
+    if 3 in var_combs[i]:
+        US_VAR_colnames.append("VAR ("+', '.join(var_combs_let[i])+")")
+
+# types of individual forecasts
+ind_fcts_colnames = ["RV", "Historical Volatility", "RiskMetrics", "HAR",
+                     "GARCH"]
+TU_colnames = ind_fcts_colnames + TU_VAR_colnames
+FV_colnames = ind_fcts_colnames + FV_VAR_colnames
+TY_colnames = ind_fcts_colnames + TY_VAR_colnames
+US_colnames = ind_fcts_colnames + US_VAR_colnames
+    
 # matrices of individual forecasts - 1 step ahead
 ind_fcts_1_TU = pd.DataFrame(
-        data=np.full((T-rw, len(ind_fcts_colnames)), 0, dtype=float),
-        columns=ind_fcts_colnames
+        data=np.full((T-rw, len(TU_colnames)), 0, dtype=float),
+        columns=TU_colnames
         )
 ind_fcts_1_FV = pd.DataFrame(
-        data=np.full((T-rw, len(ind_fcts_colnames)), 0, dtype=float),
-        columns=ind_fcts_colnames
+        data=np.full((T-rw, len(FV_colnames)), 0, dtype=float),
+        columns=FV_colnames
         )
 ind_fcts_1_TY = pd.DataFrame(
-        data=np.full((T-rw, len(ind_fcts_colnames)), 0, dtype=float),
-        columns=ind_fcts_colnames
+        data=np.full((T-rw, len(TY_colnames)), 0, dtype=float),
+        columns=TY_colnames
         )
 ind_fcts_1_US = pd.DataFrame(
-        data=np.full((T-rw, len(ind_fcts_colnames)), 0, dtype=float),
-        columns=ind_fcts_colnames
+        data=np.full((T-rw, len(US_colnames)), 0, dtype=float),
+        columns=US_colnames
         )
 # matrices of individual forecasts - 5 step ahead
 ind_fcts_5_TU = pd.DataFrame(
-        data=np.full((T-rw-4, len(ind_fcts_colnames)), 0, dtype=float),
-        columns=ind_fcts_colnames
+        data=np.full((T-rw-4, len(TU_colnames)), 0, dtype=float),
+        columns=TU_colnames
         )
 ind_fcts_5_FV = pd.DataFrame(
-        data=np.full((T-rw-4, len(ind_fcts_colnames)), 0, dtype=float),
-        columns=ind_fcts_colnames
+        data=np.full((T-rw-4, len(FV_colnames)), 0, dtype=float),
+        columns=FV_colnames
         )
 ind_fcts_5_TY = pd.DataFrame(
-        data=np.full((T-rw-4, len(ind_fcts_colnames)), 0, dtype=float),
-        columns=ind_fcts_colnames
+        data=np.full((T-rw-4, len(TY_colnames)), 0, dtype=float),
+        columns=TY_colnames
         )
 ind_fcts_5_US = pd.DataFrame(
-        data=np.full((T-rw-4, len(ind_fcts_colnames)), 0, dtype=float),
-        columns=ind_fcts_colnames
+        data=np.full((T-rw-4, len(US_colnames)), 0, dtype=float),
+        columns=US_colnames
         )
 # matrices of individual forecasts - 22 step ahead
 ind_fcts_22_TU = pd.DataFrame(
-        data=np.full((T-rw-21, len(ind_fcts_colnames)), 0, dtype=float),
-        columns=ind_fcts_colnames
+        data=np.full((T-rw-21, len(TU_colnames)), 0, dtype=float),
+        columns=TU_colnames
         )
 ind_fcts_22_FV = pd.DataFrame(
-        data=np.full((T-rw-21, len(ind_fcts_colnames)), 0, dtype=float),
-        columns=ind_fcts_colnames
+        data=np.full((T-rw-21, len(FV_colnames)), 0, dtype=float),
+        columns=FV_colnames
         )
 ind_fcts_22_TY = pd.DataFrame(
-        data=np.full((T-rw-21, len(ind_fcts_colnames)), 0, dtype=float),
-        columns=ind_fcts_colnames
+        data=np.full((T-rw-21, len(TY_colnames)), 0, dtype=float),
+        columns=TY_colnames
         )
 ind_fcts_22_US = pd.DataFrame(
-        data=np.full((T-rw-21, len(ind_fcts_colnames)), 0, dtype=float),
-        columns=ind_fcts_colnames
+        data=np.full((T-rw-21, len(US_colnames)), 0, dtype=float),
+        columns=US_colnames
         )
-
-
 
 #######################################
 # Realized Volatiliy (RV, true values)#
@@ -122,7 +158,7 @@ fct_col = ind_fcts_colnames.index("Historical Volatility")
 # roll window trough the returns
 for t in range(rw, T):
     hist_vol = np.std(ret.iloc[(t-rw):t, :], ddof=1)
-    
+
     # save forecasts
     # 1 step ahead
     ind_fcts_1_TU.iloc[t-rw, fct_col] = hist_vol[0]
@@ -139,7 +175,7 @@ for t in range(rw, T):
         ind_fcts_22_FV.iloc[t-rw, fct_col] = hist_vol[1]
         ind_fcts_22_TY.iloc[t-rw, fct_col] = hist_vol[2]
         ind_fcts_22_US.iloc[t-rw, fct_col] = hist_vol[3]
-        
+
 ##############
 # RiskMetrics#
 ##############
@@ -254,5 +290,126 @@ for m in range(M):
         # roll the RV vector 1 observation forward
         RV_rolling_vec = np.append(RV_rolling_vec[1:], current_fct)
 
+########
+# GARCH#
+########
+fct_col = ind_fcts_colnames.index("GARCH")
+
+# import data from R (estimation using rugarch is prefered over
+# the current implementation arch python library)
+GARCH_1 = pd.read_csv(
+        '/Users/Marek/Dropbox/Master_Thesis/Data/Bonds/GARCH_1.csv'
+        )
+GARCH_5 = pd.read_csv(
+        '/Users/Marek/Dropbox/Master_Thesis/Data/Bonds/GARCH_5.csv'
+        )
+GARCH_22 = pd.read_csv(
+        '/Users/Marek/Dropbox/Master_Thesis/Data/Bonds/GARCH_22.csv'
+        )
+# save the forecasts
+ind_fcts_1_TU.iloc[:, fct_col] = GARCH_1.iloc[:, 0].values
+ind_fcts_5_TU.iloc[:, fct_col] = GARCH_5.iloc[:, 0].values
+ind_fcts_22_TU.iloc[:, fct_col] = GARCH_22.iloc[:, 0].values
+# FV
+ind_fcts_1_FV.iloc[:, fct_col] = GARCH_1.iloc[:, 1].values
+ind_fcts_5_FV.iloc[:, fct_col] = GARCH_5.iloc[:, 1].values
+ind_fcts_22_FV.iloc[:, fct_col] = GARCH_22.iloc[:, 1].values
+# TY
+ind_fcts_1_TY.iloc[:, fct_col] = GARCH_1.iloc[:, 2].values
+ind_fcts_5_TY.iloc[:, fct_col] = GARCH_5.iloc[:, 2].values
+ind_fcts_22_TY.iloc[:, fct_col] = GARCH_22.iloc[:, 2].values
+# US
+ind_fcts_1_US.iloc[:, fct_col] = GARCH_1.iloc[:, 3].values
+ind_fcts_5_US.iloc[:, fct_col] = GARCH_5.iloc[:, 3].values
+ind_fcts_22_US.iloc[:, fct_col] = GARCH_22.iloc[:, 3].values
+
+######
+# VAR#
+######
+# fractional differencing parameter estimated using GPH method in R
+# fractionally differencing series
+# def frac_diff(series, d):
+#    new series ...
+#    output = 0
+#    for i in range(1, 101):
+#        denum = np.math.factorial(i)
+#        num = 1
+#        for j in range(i):
+#            num *= (d-j)
+#        output += (series[ind - i] * (num/denum))
+#    return output
+
+# roll trough the training data
+for c in var_combs:
+    # translate into variable names
+    c_vars = "VAR ("+', '.join([bond_data_colnames[x] for x in c])+")"
+    # select variables to VAR
+    X_all = rvol.iloc[:, c].values
+    # select time window
+    for t in range(rw, T):
+        X = X_all[(t-rw):t, :]
+        # for one variable run simple AR
+        if len(c) == 1:
+            # estimate the model
+            model = AR(X)
+            model_fit = model.fit(5)
+            model_fct = model_fit.predict(start=rw, end=(rw+21))
+            # save forecasts
+            if 0 in c:  # check for TU
+                ind_fcts_1_TU.iloc[(t-rw), TU_colnames.index(c_vars)] = model_fct[0]
+                if (t-rw) < (T-rw-4):
+                    ind_fcts_5_TU.iloc[(t-rw), TU_colnames.index(c_vars)] = model_fct[4]
+                if (t-rw) < (T-rw-21):
+                    ind_fcts_22_TU.iloc[(t-rw), TU_colnames.index(c_vars)] = model_fct[21]
+            if 1 in c:  # check for FV
+                ind_fcts_1_FV.iloc[(t-rw), FV_colnames.index(c_vars)] = model_fct[0]
+                if (t-rw) < (T-rw-4):
+                    ind_fcts_5_FV.iloc[(t-rw), FV_colnames.index(c_vars)] = model_fct[4]
+                if (t-rw) < (T-rw-21):
+                    ind_fcts_22_FV.iloc[(t-rw), FV_colnames.index(c_vars)] = model_fct[21]
+            if 2 in c:  # check for TY
+                ind_fcts_1_TY.iloc[(t-rw), TY_colnames.index(c_vars)] = model_fct[0]
+                if (t-rw) < (T-rw-4):
+                    ind_fcts_5_TY.iloc[(t-rw), TY_colnames.index(c_vars)] = model_fct[4]
+                if (t-rw) < (T-rw-21):
+                    ind_fcts_22_TY.iloc[(t-rw), TY_colnames.index(c_vars)] = model_fct[21]
+            if 3 in c:  # check for US
+                ind_fcts_1_US.iloc[(t-rw), US_colnames.index(c_vars)] = model_fct[0]
+                if (t-rw) < (T-rw-4):
+                    ind_fcts_5_US.iloc[(t-rw), US_colnames.index(c_vars)] = model_fct[4]
+                if (t-rw) < (T-rw-21):
+                    ind_fcts_22_US.iloc[(t-rw), US_colnames.index(c_vars)] = model_fct[21]
+        # for more than one variable run VAR
+        else:
+            # estimate the model
+            model = VAR(X)
+            model_fit = model.fit(5)
+            model_fct = model_fit.forecast(X, 22)
+            # save forecasts
+            if 0 in c:  # check for TU
+                ind_fcts_1_TU.iloc[(t-rw), TU_colnames.index(c_vars)] = model_fct[0, c.index(0)]
+                if (t-rw) < (T-rw-4):
+                    ind_fcts_5_TU.iloc[(t-rw), TU_colnames.index(c_vars)] = model_fct[4, c.index(0)]
+                if (t-rw) < (T-rw-21):
+                    ind_fcts_22_TU.iloc[(t-rw), TU_colnames.index(c_vars)] = model_fct[21, c.index(0)]
+            if 1 in c:  # check for FV
+                ind_fcts_1_FV.iloc[(t-rw), FV_colnames.index(c_vars)] = model_fct[0, c.index(1)]
+                if (t-rw) < (T-rw-4):
+                    ind_fcts_5_FV.iloc[(t-rw), FV_colnames.index(c_vars)] = model_fct[4, c.index(1)]
+                if (t-rw) < (T-rw-21):
+                    ind_fcts_22_FV.iloc[(t-rw), FV_colnames.index(c_vars)] = model_fct[21, c.index(1)]
+            if 2 in c:  # check for TY
+                ind_fcts_1_TY.iloc[(t-rw), TY_colnames.index(c_vars)] = model_fct[0, c.index(2)]
+                if (t-rw) < (T-rw-4):
+                    ind_fcts_5_TY.iloc[(t-rw), TY_colnames.index(c_vars)] = model_fct[4, c.index(2)]
+                if (t-rw) < (T-rw-21):
+                    ind_fcts_22_TY.iloc[(t-rw), TY_colnames.index(c_vars)] = model_fct[21, c.index(2)]
+            if 3 in c:  # check for US
+                ind_fcts_1_US.iloc[(t-rw), US_colnames.index(c_vars)] = model_fct[0, c.index(3)]
+                if (t-rw) < (T-rw-4):
+                    ind_fcts_5_US.iloc[(t-rw), US_colnames.index(c_vars)] = model_fct[4, c.index(3)]
+                if (t-rw) < (T-rw-21):
+                    ind_fcts_22_US.iloc[(t-rw), US_colnames.index(c_vars)] = model_fct[21, c.index(3)]
+        
 
 # END OF FILE
