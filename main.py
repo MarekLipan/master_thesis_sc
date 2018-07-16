@@ -70,6 +70,20 @@ if run_bond == 1:
     # read the prepared DFs
     ret = pd.read_pickle(bond_data_path + "ret.pkl")
     rvol = pd.read_pickle(bond_data_path + "rvol.pkl")
+    
+    # read prepared individual forecasts
+    ind_fcts_1_TU = pd.read_pickle(bond_data_path + "ind_fcts_1_TU.pkl")
+    ind_fcts_5_TU = pd.read_pickle(bond_data_path + "ind_fcts_5_TU.pkl")
+    ind_fcts_22_TU = pd.read_pickle(bond_data_path + "ind_fcts_22_TU.pkl")
+    ind_fcts_1_FV = pd.read_pickle(bond_data_path + "ind_fcts_1_FV.pkl")
+    ind_fcts_5_FV = pd.read_pickle(bond_data_path + "ind_fcts_5_FV.pkl")
+    ind_fcts_22_FV = pd.read_pickle(bond_data_path + "ind_fcts_22_FV.pkl")
+    ind_fcts_1_TY = pd.read_pickle(bond_data_path + "ind_fcts_1_TY.pkl")
+    ind_fcts_5_TY = pd.read_pickle(bond_data_path + "ind_fcts_5_TY.pkl")
+    ind_fcts_22_TY = pd.read_pickle(bond_data_path + "ind_fcts_22_TY.pkl")
+    ind_fcts_1_US = pd.read_pickle(bond_data_path + "ind_fcts_1_US.pkl")
+    ind_fcts_5_US = pd.read_pickle(bond_data_path + "ind_fcts_5_US.pkl")
+    ind_fcts_22_US = pd.read_pickle(bond_data_path + "ind_fcts_22_US.pkl")
 
 ###############
 # END OF FILE #

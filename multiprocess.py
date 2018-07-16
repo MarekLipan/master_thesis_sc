@@ -15,12 +15,39 @@ import numpy as np
 import random
 import time
 
-# data path
-path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
 
-# datasets to be loaded
-df_names = ["spf_bal_RGDP_1Y", "spf_bal_RGDP_2Y", "spf_bal_HICP_1Y",
-            "spf_bal_HICP_2Y", "spf_bal_UNEM_1Y", "spf_bal_UNEM_2Y"]
+################
+# CONTROL PANEL#
+################
+#
+# choose application:
+multi_spf = 0
+multi_bond = 1
+#
+# choose the lengths of the rolling window:
+#
+# length of the rolling window
+w = 1000
+#
+#########################
+# MULTIPROCESSING SCRIPT#
+#########################
+
+# data
+path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
+if multi_spf == 1:
+    spec_path = "SPF/Balanced_panels/"
+    # datasets to be loaded
+    df_names = ["spf_bal_RGDP_1Y", "spf_bal_RGDP_2Y", "spf_bal_HICP_1Y",
+                "spf_bal_HICP_2Y", "spf_bal_UNEM_1Y", "spf_bal_UNEM_2Y"]
+if multi_bond == 1:
+    spec_path = "Bonds/"
+    # datasets to be loaded
+    # df_names = ["ind_fcts_1_TU", "ind_fcts_1_FV", "ind_fcts_1_TY",
+    #            "ind_fcts_1_US", "ind_fcts_5_TU", "ind_fcts_5_FV",
+    #            "ind_fcts_5_TY", "ind_fcts_5_US", "ind_fcts_22_TU",
+    #            "ind_fcts_22_FV", "ind_fcts_22_TY", "ind_fcts_22_US"]
+    df_names = ["ind_fcts_1_TU"]
 
 # load the datasets
 df_list = []
@@ -28,13 +55,10 @@ df_len = []
 
 for i in df_names:
 
-    complete_path = path + "SPF/Balanced_panels/" + i + ".pkl"
+    complete_path = path + spec_path + i + ".pkl"
     df_part = pd.read_pickle(complete_path)
     df_list.append(df_part)
     df_len.append(df_part.shape[0])
-
-# length of the rolling window
-w = 40
 
 
 def roll_window(w_len, df_ind, obs_ind):

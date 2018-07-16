@@ -10,6 +10,7 @@ This script is used to create and export data descriptive charts and tables.
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from cycler import cycler
 from scipy import stats
 from pylatex import Table, Tabular
 from statsmodels.graphics.tsaplots import plot_acf
@@ -179,6 +180,146 @@ tabl.generate_tex(tab_path + "bond_rvol_desc_stats")
 
 plot_acf(rvol.iloc[:,3], lags=20)
 plot_pacf(rvol.iloc[:,3], lags=20)
+
+
+#######################
+# INDIVIDUAL FORECASTS#
+#######################
+# number of individual forecasts
+K = ind_fcts_1_TU.shape[1]
+
+# PLOT OF INDIVIDUAL FORECASTS
+# colour cycle
+cyc = cycler('color', ['red', 'cyan', 'magenta', 'yellow','black',
+                       'dimgrey', 'dimgrey', 'dimgrey', 'dimgrey', 'darkgrey',
+                       'dimgrey', 'dimgrey', 'dimgrey'])
+# 1-step-ahead forecasts
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(13, 10))
+# TU -  2 year
+a = axes[0, 0]
+a.set_prop_cycle(cyc)
+ind_fcts_1_TU.plot(ax=a, linewidth=0.5)
+a.set_title('TU (2 Year)')
+a.set_ylabel('RVOL')
+a.set_xlabel('Time')
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+# FV -  5 year
+a = axes[0, 1]
+a.set_prop_cycle(cyc)
+ind_fcts_1_FV.plot(ax=a, linewidth=0.5)
+a.set_title('FV (5 Year)')
+a.set_ylabel('RVOL')
+a.set_xlabel('Time')
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+# TY - 10 year
+a = axes[1, 0]
+a.set_prop_cycle(cyc)
+ind_fcts_1_TY.plot(ax=a, linewidth=0.5)
+a.set_title('TY (10 Year)')
+a.set_ylabel('RVOL')
+a.set_xlabel('Time')
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+# US - 30 year
+a = axes[1, 1]
+a.set_prop_cycle(cyc)
+ind_fcts_1_US.plot(ax=a, linewidth=0.5)
+a.set_title('US (30 Year)')
+a.set_ylabel('RVOL')
+a.set_xlabel('Time')
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+# whole figure
+fig.autofmt_xdate()
+fig.savefig(fig_path + "bond_ind_fcts_1.pdf", bbox_inches='tight')
+
+# 5-step-ahead forecasts
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(13, 10))
+# TU -  2 year
+a = axes[0, 0]
+a.set_prop_cycle(cyc)
+ind_fcts_5_TU.plot(ax=a, linewidth=0.5)
+a.set_title('TU (2 Year)')
+a.set_ylabel('RVOL')
+a.set_xlabel('Time')
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+# FV -  5 year
+a = axes[0, 1]
+a.set_prop_cycle(cyc)
+ind_fcts_5_FV.plot(ax=a, linewidth=0.5)
+a.set_title('FV (5 Year)')
+a.set_ylabel('RVOL')
+a.set_xlabel('Time')
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+# TY - 10 year
+a = axes[1, 0]
+a.set_prop_cycle(cyc)
+ind_fcts_5_TY.plot(ax=a, linewidth=0.5)
+a.set_title('TY (10 Year)')
+a.set_ylabel('RVOL')
+a.set_xlabel('Time')
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+# US - 30 year
+a = axes[1, 1]
+a.set_prop_cycle(cyc)
+ind_fcts_5_US.plot(ax=a, linewidth=0.5)
+a.set_title('US (30 Year)')
+a.set_ylabel('RVOL')
+a.set_xlabel('Time')
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+# whole figure
+fig.autofmt_xdate()
+fig.savefig(fig_path + "bond_ind_fcts_5.pdf", bbox_inches='tight')
+
+# 22-step-ahead forecasts
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(13, 10))
+# TU -  2 year
+a = axes[0, 0]
+a.set_prop_cycle(cyc)
+ind_fcts_22_TU.plot(ax=a, linewidth=0.5)
+a.set_title('TU (2 Year)')
+a.set_ylabel('RVOL')
+a.set_xlabel('Time')
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+# FV -  5 year
+a = axes[0, 1]
+a.set_prop_cycle(cyc)
+ind_fcts_22_FV.plot(ax=a, linewidth=0.5)
+a.set_title('FV (5 Year)')
+a.set_ylabel('RVOL')
+a.set_xlabel('Time')
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+# TY - 10 year
+a = axes[1, 0]
+a.set_prop_cycle(cyc)
+ind_fcts_22_TY.plot(ax=a, linewidth=0.5)
+a.set_title('TY (10 Year)')
+a.set_ylabel('RVOL')
+a.set_xlabel('Time')
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+# US - 30 year
+a = axes[1, 1]
+a.set_prop_cycle(cyc)
+ind_fcts_22_US.plot(ax=a, linewidth=0.5)
+a.set_title('US (30 Year)')
+a.set_ylabel('RVOL')
+a.set_xlabel('Time')
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+# whole figure
+fig.autofmt_xdate()
+fig.savefig(fig_path + "bond_ind_fcts_22.pdf", bbox_inches='tight')
+# TABLE OF INDIVIDUAL FORECASTS
+
 
 ###############
 # END OF FILE #

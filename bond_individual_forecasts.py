@@ -69,7 +69,7 @@ for i in range(len(var_combs)):
         US_VAR_colnames.append("VAR ("+', '.join(var_combs_let[i])+")")
 
 # types of individual forecasts
-ind_fcts_colnames = ["RV", "Historical Volatility", "RiskMetrics", "HAR",
+ind_fcts_colnames = ["RVOL", "Historical Volatility", "RiskMetrics", "HAR",
                      "GARCH"]
 TU_colnames = ind_fcts_colnames + TU_VAR_colnames
 FV_colnames = ind_fcts_colnames + FV_VAR_colnames
@@ -79,59 +79,71 @@ US_colnames = ind_fcts_colnames + US_VAR_colnames
 # matrices of individual forecasts - 1 step ahead
 ind_fcts_1_TU = pd.DataFrame(
         data=np.full((T-rw, len(TU_colnames)), 0, dtype=float),
-        columns=TU_colnames
+        columns=TU_colnames,
+        index=rvol.index[-(T-rw):]
         )
 ind_fcts_1_FV = pd.DataFrame(
         data=np.full((T-rw, len(FV_colnames)), 0, dtype=float),
-        columns=FV_colnames
+        columns=FV_colnames,
+        index=rvol.index[-(T-rw):]
         )
 ind_fcts_1_TY = pd.DataFrame(
         data=np.full((T-rw, len(TY_colnames)), 0, dtype=float),
-        columns=TY_colnames
+        columns=TY_colnames,
+        index=rvol.index[-(T-rw):]
         )
 ind_fcts_1_US = pd.DataFrame(
         data=np.full((T-rw, len(US_colnames)), 0, dtype=float),
-        columns=US_colnames
+        columns=US_colnames,
+        index=rvol.index[-(T-rw):]
         )
 # matrices of individual forecasts - 5 step ahead
 ind_fcts_5_TU = pd.DataFrame(
         data=np.full((T-rw-4, len(TU_colnames)), 0, dtype=float),
-        columns=TU_colnames
+        columns=TU_colnames,
+        index=rvol.index[-(T-rw-4):]
         )
 ind_fcts_5_FV = pd.DataFrame(
         data=np.full((T-rw-4, len(FV_colnames)), 0, dtype=float),
-        columns=FV_colnames
+        columns=FV_colnames,
+        index=rvol.index[-(T-rw-4):]
         )
 ind_fcts_5_TY = pd.DataFrame(
         data=np.full((T-rw-4, len(TY_colnames)), 0, dtype=float),
-        columns=TY_colnames
+        columns=TY_colnames,
+        index=rvol.index[-(T-rw-4):]
         )
 ind_fcts_5_US = pd.DataFrame(
         data=np.full((T-rw-4, len(US_colnames)), 0, dtype=float),
-        columns=US_colnames
+        columns=US_colnames,
+        index=rvol.index[-(T-rw-4):]
         )
 # matrices of individual forecasts - 22 step ahead
 ind_fcts_22_TU = pd.DataFrame(
         data=np.full((T-rw-21, len(TU_colnames)), 0, dtype=float),
-        columns=TU_colnames
+        columns=TU_colnames,
+        index=rvol.index[-(T-rw-21):]
         )
 ind_fcts_22_FV = pd.DataFrame(
         data=np.full((T-rw-21, len(FV_colnames)), 0, dtype=float),
-        columns=FV_colnames
+        columns=FV_colnames,
+        index=rvol.index[-(T-rw-21):]
         )
 ind_fcts_22_TY = pd.DataFrame(
         data=np.full((T-rw-21, len(TY_colnames)), 0, dtype=float),
-        columns=TY_colnames
+        columns=TY_colnames,
+        index=rvol.index[-(T-rw-21):]
         )
 ind_fcts_22_US = pd.DataFrame(
         data=np.full((T-rw-21, len(US_colnames)), 0, dtype=float),
-        columns=US_colnames
+        columns=US_colnames,
+        index=rvol.index[-(T-rw-21):]
         )
 
 #######################################
 # Realized Volatiliy (RV, true values)#
 #######################################
-fct_col = ind_fcts_colnames.index("RV")
+fct_col = ind_fcts_colnames.index("RVOL")
 
 # TU
 ind_fcts_1_TU.iloc[:, fct_col] = rvol.iloc[rw:, 0].values
