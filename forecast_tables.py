@@ -12,6 +12,7 @@ import numpy as np
 import combination_methods as cm
 import accuracy_measures as am
 from pylatex import Table, Tabular
+from pylatex.utils import NoEscape
 
 
 def run_comb_methods(df_train, df_test):
@@ -258,6 +259,7 @@ def gen_tex_table(tbl, cap, file_name, r):
     # create tabule object
     tabl = Table()
     tabl.add_caption(cap)
+    tabl.append(NoEscape("\label{tab: " + cap +"}"))
 
     # create tabular object
     tabr = Tabular(table_spec="lccc")

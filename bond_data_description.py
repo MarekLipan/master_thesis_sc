@@ -13,6 +13,7 @@ import numpy as np
 from cycler import cycler
 from scipy import stats
 from pylatex import Table, Tabular
+from pylatex.utils import NoEscape
 from statsmodels.graphics.tsaplots import plot_acf
 from statsmodels.graphics.tsaplots import plot_pacf
 
@@ -119,6 +120,7 @@ ret_desc_stat.iloc[8, :] = stats.skew(ret.values, axis=0)
 # create tabule object
 tabl = Table()
 tabl.add_caption("Descriptive statistics of returns of U.S. government bonds with different maturities.")
+tabl.append(NoEscape('\label{tab: Bond_ret_Desc_Stats}'))
 # create tabular object
 tabr = Tabular(table_spec="lcccc")
 tabr.add_hline()
@@ -155,6 +157,7 @@ rvol_desc_stat.iloc[8, :] = stats.skew(rvol.values, axis=0)
 # create tabule object
 tabl = Table()
 tabl.add_caption("Descriptive statistics of realized volatility of U.S. government bonds with different maturities.")
+tabl.append(NoEscape('\label{tab: Bond_RVOL_Desc_Stats}'))
 # create tabular object
 tabr = Tabular(table_spec="lcccc")
 tabr.add_hline()
