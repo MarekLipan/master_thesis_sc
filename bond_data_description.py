@@ -16,6 +16,7 @@ from pylatex import Table, Tabular
 from pylatex.utils import NoEscape
 from statsmodels.graphics.tsaplots import plot_acf
 from statsmodels.graphics.tsaplots import plot_pacf
+from statsmodels.tsa.stattools import adfuller
 
 # path to where the figures and tables are stored
 fig_path = "C:/Users/Marek/Dropbox/Master_Thesis/Latex/Figures/"
@@ -117,9 +118,9 @@ ret_desc_stat.iloc[6, :] = np.max(ret.values, axis=0)
 ret_desc_stat.iloc[7, :] = stats.kurtosis(ret.values, axis=0)
 ret_desc_stat.iloc[8, :] = stats.skew(ret.values, axis=0)
 
-# create tabule object
+# create table object
 tabl = Table()
-tabl.add_caption("Descriptive statistics of returns of U.S. government bonds with different maturities.")
+tabl.add_caption("Descriptive statistics of log-returns of U.S. Treasury futures")
 tabl.append(NoEscape('\label{tab: Bond_ret_Desc_Stats}'))
 # create tabular object
 tabr = Tabular(table_spec="lcccc")
@@ -154,9 +155,9 @@ rvol_desc_stat.iloc[6, :] = np.max(rvol.values, axis=0)
 rvol_desc_stat.iloc[7, :] = stats.kurtosis(rvol.values, axis=0)
 rvol_desc_stat.iloc[8, :] = stats.skew(rvol.values, axis=0)
 
-# create tabule object
+# create table object
 tabl = Table()
-tabl.add_caption("Descriptive statistics of realized volatility of U.S. government bonds with different maturities.")
+tabl.add_caption("Descriptive statistics of realized volatility of log-returns of U.S. Treasury futures")
 tabl.append(NoEscape('\label{tab: Bond_RVOL_Desc_Stats}'))
 # create tabular object
 tabr = Tabular(table_spec="lcccc")
@@ -184,6 +185,76 @@ tabl.generate_tex(tab_path + "bond_rvol_desc_stats")
 plot_acf(rvol.iloc[:,3], lags=20)
 plot_pacf(rvol.iloc[:,3], lags=20)
 
+############
+# ADF TESTS#
+############
+adf_stats = ["Test Statistic", "P-value"]
+
+# RETURNS
+adf_ret = pd.DataFrame(data=np.full((2, 4), np.nan, dtype=float),
+                             columns=tickers,
+                             index=adf_stats)
+
+for i in range(4):
+    adf_test = adfuller(ret.iloc[:, i])
+    adf_ret.iloc[0, i] = adf_test[0]
+    adf_ret.iloc[1, i] = adf_test[1]
+
+# create table object
+tabl = Table()
+tabl.add_caption("Augmented Dickey-Fuller test results for the log-returns of U.S. Treasury futures")
+tabl.append(NoEscape('\label{tab: Bond_ret_ADF}'))
+# create tabular object
+tabr = Tabular(table_spec="lcccc")
+tabr.add_hline()
+tabr.add_hline()
+# header row
+tabr.add_row([""] + tickers)
+tabr.add_hline()
+# fill in the rows of tabular
+for i in range(2):
+    tabr.add_row([adf_stats[i]] + [
+            "{:.4f}".format(item) for item in adf_ret.iloc[i, :]])
+# end of table
+tabr.add_hline()
+tabr.add_hline()
+# add tabular to table
+tabl.append(tabr)
+# export the table
+tabl.generate_tex(tab_path + "Bond_ret_ADF")
+
+# REALIZED VOLATILITY
+adf_rvol = pd.DataFrame(data=np.full((2, 4), np.nan, dtype=float),
+                        columns=tickers,
+                        index=adf_stats)
+
+for i in range(4):
+    adf_test = adfuller(rvol.iloc[:, i])
+    adf_rvol.iloc[0, i] = adf_test[0]
+    adf_rvol.iloc[1, i] = adf_test[1]
+
+# create table object
+tabl = Table()
+tabl.add_caption("Augmented Dickey-Fuller test results for the realized volatility of log-returns of U.S. Treasury futures")
+tabl.append(NoEscape('\label{tab: Bond_RVOL_ADF}'))
+# create tabular object
+tabr = Tabular(table_spec="lcccc")
+tabr.add_hline()
+tabr.add_hline()
+# header row
+tabr.add_row([""] + tickers)
+tabr.add_hline()
+# fill in the rows of tabular
+for i in range(2):
+    tabr.add_row([adf_stats[i]] + [
+            "{:.4f}".format(item) for item in adf_rvol.iloc[i, :]])
+# end of table
+tabr.add_hline()
+tabr.add_hline()
+# add tabular to table
+tabl.append(tabr)
+# export the table
+tabl.generate_tex(tab_path + "Bond_RVOL_ADF")
 
 #######################
 # INDIVIDUAL FORECASTS#
