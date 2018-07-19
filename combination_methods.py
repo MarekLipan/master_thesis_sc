@@ -24,7 +24,6 @@ import scipy.stats as sps
 from sklearn import linear_model
 from sklearn.decomposition import PCA
 from sklearn.neural_network import MLPRegressor
-import time
 
 """
 SIMPLE METHODS
@@ -45,7 +44,7 @@ def Equal_Weights(df_test):
     return df_pred
 
 
-def Bates_Granger_1(df_train, df_test, nu):
+def Bates_Granger_1(df_train, df_test, nu=None):
     """
     This method combines the individual forecasts linearly, using the length
     of the training window nu.
@@ -59,6 +58,10 @@ def Bates_Granger_1(df_train, df_test, nu):
 
     # number of periods
     T = df_train.shape[0]
+
+    # the default length of the relevant window is equal to sample length
+    if nu is None:
+        nu = T
 
     if nu > T:
         raise ValueError('Parameter nu must be <= length of training sample')
@@ -78,7 +81,7 @@ def Bates_Granger_1(df_train, df_test, nu):
     return df_pred
 
 
-def Bates_Granger_2(df_train, df_test, nu):
+def Bates_Granger_2(df_train, df_test, nu=None):
     """
     This method combines the individual forecasts linearly, using the length
     of the training window nu.
@@ -97,6 +100,10 @@ def Bates_Granger_2(df_train, df_test, nu):
     # number of individual forecasts and number of periods
     K = df_test.shape[1]
     T = df_train.shape[0]
+
+    # the default length of the relevant window is equal to sample length
+    if nu is None:
+        nu = T
 
     if nu > T:
         raise ValueError('Parameter nu must be <= length of training sample')
@@ -152,6 +159,10 @@ def Bates_Granger_3(df_train, df_test, nu, alpha):
     # number of individual forecasts and number of periods
     K = df_test.shape[1]
     T = df_train.shape[0]
+
+    # the default length of the relevant window is equal to sample length
+    if nu is None:
+        nu = T
 
     if nu > T:
         raise ValueError('Parameter nu must be <= length of training sample')
@@ -2169,68 +2180,6 @@ def cAPM_Q_learning(df_train, df_test, MinRPT, MaxRPT_r1, MaxRPT, alpha,
     return df_pred
 
 
-def MK_mistake(df_train, df_test):
-    """
-    The Artificial Prediction Market technique called Market for Kernels.
-    Initially all agents are provided the same budget. The market is run
-    for each observation in the training sample. Each agent bets his wealth
-    on a gaussian kernel with mean equal to his expected value and standard
-    deviation equal to an average of his historic absolute errors. The wealth
-    from the common pot is then divided among agents according according to the
-    ratio of their (budget weighted) kernels evaluated at the true outcome. The
-    market prediction is the mean of the gaussian mixture model of all agent's
-    bets, which is equal to the budget weighted average of all kernel means.
-
-    """
-
-    # number of periods
-    T = df_train.shape[0]
-
-    # matrix of individual forecasts
-    F = df_train.iloc[:, 1:].values
-    F_test = df_test.iloc[:, :].values
-
-    # number of agents
-    K = df_test.shape[1]
-
-    # true outcomes
-    y = df_train.iloc[:, 0].values
-
-    # initialize agent wealth (sum equal to 1 -> results in convex combination)
-    w = np.full(K, 1/K, dtype=float)
-
-    # initialize standard deviations
-    sigma = np.full(K, 1, dtype=float)
-
-    # run market for all observations (training the market)
-    for i in range(T):
-
-        # individual predictions in the current market
-        ind_pred = F[i, :]
-
-        # size of bet at the true outcome (kernel evaluated at true outcome)
-        kernel_val = sps.norm.pdf(y[i], loc=ind_pred, scale=sigma)
-
-        # reward agents
-        w = kernel_val / np.sum(kernel_val)
-
-        # update sigma
-        abs_error = np.abs(y[i] - ind_pred)
-        sigma = ((i+1)*sigma + abs_error) / (i + 2)
-
-    # using the trained market for out of sample forecasts
-    # obtain the aggregated market prediction in each test market
-    market_pred = np.dot(F_test, w)
-
-    # output
-    df_pred = pd.DataFrame(
-            {"Market for Kernels (Mistake)":  market_pred},
-            index=df_test.index
-            )
-
-    return df_pred
-
-
 def MK(df_train, df_test):
     """
     The Artificial Prediction Market technique called Market for Kernels.
@@ -2290,78 +2239,6 @@ def MK(df_train, df_test):
     # output
     df_pred = pd.DataFrame(
             {"Market for Kernels":  market_pred},
-            index=df_test.index
-            )
-
-    return df_pred
-
-
-def MK_test(df_train, df_test):
-    """
-    The Artificial Prediction Market technique called Market for Kernels.
-    Initially all agents are provided the same budget. The market is run
-    for each observation in the training sample. Each agent bets his wealth
-    on a gaussian kernel with mean equal to his expected value and standard
-    deviation equal to an average of his historic absolute errors. The wealth
-    from the common pot is then divided among agents according according to the
-    ratio of their (budget weighted) kernels evaluated at the true outcome. The
-    market prediction is the mean of the gaussian mixture model of all agent's
-    bets, which is equal to the budget weighted average of all kernel means.
-
-    """
-
-    # number of periods
-    T = df_train.shape[0]
-
-    # matrix of individual forecasts
-    F = df_train.iloc[:, 1:].values
-    F_test = df_test.iloc[:, :].values
-
-    # number of agents
-    K = df_test.shape[1]
-
-    # true outcomes
-    y = df_train.iloc[:, 0].values
-
-    # initialize agent wealth (sum equal to 1 -> results in convex combination)
-    # in the first round bet all the wealth
-    w = np.full(K, 0, dtype=float)
-    bet = np.full(K, 1/K, dtype=float)
-
-    # initialize standard deviations
-    sigma = np.full(K, 1, dtype=float)
-
-    # run market for all observations (training the market)
-    for i in range(T):
-
-        # individual predictions in the current market
-        ind_pred = F[i, :]
-
-        # size of bet at the true outcome (kernel evaluated at true outcome)
-        kernel_val = sps.norm.pdf(y[i], loc=ind_pred, scale=sigma)
-
-        # scale by the size of budget of each agent
-        weigh_kernel_val = np.multiply(bet, kernel_val)
-
-        # reward agents
-        win_share = weigh_kernel_val / np.sum(weigh_kernel_val)
-        w += np.sum(bet) * win_share
-
-        # next round bet size
-        bet = np.multiply(win_share, w)
-        w -= bet
-
-        # update sigma
-        abs_error = np.abs(y[i] - ind_pred)
-        sigma = ((i+1)*sigma + abs_error) / (i + 2)
-
-    # using the trained market for out of sample forecasts
-    # obtain the aggregated market prediction in each test market
-    market_pred = np.dot(F_test, bet) / np.sum(bet)
-
-    # output
-    df_pred = pd.DataFrame(
-            {"Market for Kernels (Test)":  market_pred},
             index=df_test.index
             )
 

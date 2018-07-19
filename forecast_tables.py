@@ -39,9 +39,9 @@ def run_comb_methods(df_train, df_test):
     # combine and forecast
     fcts = pd.concat([
             cm.Equal_Weights(df_test),
-            cm.Bates_Granger_1(df_train, df_test, nu=40),
-            cm.Bates_Granger_2(df_train, df_test, nu=40),
-            cm.Bates_Granger_3(df_train, df_test, nu=40, alpha=0.6),
+            cm.Bates_Granger_1(df_train, df_test),
+            cm.Bates_Granger_2(df_train, df_test),
+            cm.Bates_Granger_3(df_train, df_test, alpha=0.6),
             cm.Bates_Granger_4(df_train, df_test, W=1.5),
             cm.Bates_Granger_5(df_train, df_test, W=1.5),
             cm.Granger_Ramanathan_1(df_train, df_test),
@@ -56,21 +56,21 @@ def run_comb_methods(df_train, df_test):
             cm.Principal_Component_Forecast(df_train, df_test, "BIC"),
             cm.Empirical_Bayes_Estimator(df_train, df_test),
             cm.Kappa_Shrinkage(df_train, df_test, kappa=0.5),
-            #cm.Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv=5),
-            #cm.BMA_Marginal_Likelihood(df_train, df_test, iterations=6000,
-            #                           burnin=1000, p_1=0.5),
-            #cm.BMA_Predictive_Likelihood(df_train, df_test,
-            #                             iterations=6000, burnin=1000,
-            #                             p_1=0.5, l_share=0.7),
+            cm.Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv=5),
+            cm.BMA_Marginal_Likelihood(df_train, df_test, iterations=6000,
+                                       burnin=1000, p_1=0.5),
+            cm.BMA_Predictive_Likelihood(df_train, df_test,
+                                         iterations=6000, burnin=1000,
+                                         p_1=0.5, l_share=0.7),
             cm.ANN(df_train, df_test),
-            #cm.EP_NN(df_train, df_test, sigma=0.05, gen=500, n=20),
-            #cm.Bagging(df_train, df_test, B=1000),
+            cm.EP_NN(df_train, df_test, sigma=0.05, gen=500, n=20),
+            cm.Bagging(df_train, df_test, B=1000),
             cm.Componentwise_Boosting(df_train, df_test, nu=0.1),
-            #cm.AdaBoost(df_train, df_test, phi=0.2),
-            #cm.cAPM_Constant(df_train, df_test, MaxRPT_r1=0.9, MaxRPT=0.01,
-            #                 no_rounds=30),
-            #cm.cAPM_Q_learning(df_train, df_test, MinRPT=0.0001, MaxRPT_r1=0.9,
-            #                   MaxRPT=0.01, alpha=0.7, no_rounds=30),
+            cm.AdaBoost(df_train, df_test, phi=0.2),
+            cm.cAPM_Constant(df_train, df_test, MaxRPT_r1=0.9, MaxRPT=0.01,
+                             no_rounds=30),
+            cm.cAPM_Q_learning(df_train, df_test, MinRPT=0.0001, MaxRPT_r1=0.9,
+                               MaxRPT=0.01, alpha=0.7, no_rounds=30),
             cm.MK(df_train, df_test)
             ], axis=1).values[0]
 
@@ -127,16 +127,16 @@ def create_acc_table(df, w, proc, df_name):
                        "Principal Component Forecast (BIC)",
                        "Empirical Bayes Estimator",
                        "Kappa-Shrinkage",
-                       #"Two-Step Egalitarian LASSO",
-                       #"BMA (Marginal Likelihood)",
-                       #"BMA (Predictive Likelihood)",
+                       "Two-Step Egalitarian LASSO",
+                       "BMA (Marginal Likelihood)",
+                       "BMA (Predictive Likelihood)",
                        "ANN",
-                       #"EP-NN",
-                       #"Bagging",
+                       "EP-NN",
+                       "Bagging",
                        "Componentwise Boosting",
-                       #"AdaBoost",
-                       #"c-APM (Constant)",
-                       #"c-APM (Q-learning)",
+                       "AdaBoost",
+                       "c-APM (Constant)",
+                       "c-APM (Q-learning)",
                        "Market for Kernels"
                        ])
 
@@ -257,7 +257,7 @@ def gen_tex_table(tbl, cap, file_name, r):
     # create tabule object
     tabl = Table()
     tabl.add_caption(cap)
-    tabl.append(NoEscape("\label{tab: " + cap +"}"))
+    tabl.append(NoEscape("\label{tab: " + cap + "}"))
 
     # create tabular object
     tabr = Tabular(table_spec="lccc")

@@ -21,13 +21,13 @@ import time
 ################
 #
 # choose application:
-multi_spf = 0
-multi_bond = 1
+multi_spf = 1
+multi_bond = 0
 #
 # choose the lengths of the rolling window:
 #
-# length of the rolling window
-w = 200
+# list lengths of the rolling windows
+w_list = [25, 35, 45]
 #
 #########################
 # MULTIPROCESSING SCRIPT#
@@ -83,9 +83,6 @@ def roll_window(w_len, df_ind, obs_ind):
         Forecasts produced using the combination methods.
     """
 
-    # get parameters from the supplied tuple
-    # w_len, df_ind, obs_ind = par[0], par[1], par[2]
-
     # create the datasets
     df = df_list[df_ind]
     df_train = df.iloc[obs_ind:(w_len+obs_ind), :]
@@ -105,37 +102,41 @@ def roll_window(w_len, df_ind, obs_ind):
 
 if __name__ == '__main__':
 
-    start_time = time.time()
+    # repeat the whole cycle for all defined rolling window lengths
+    for x in w_list:
+        w = x
+        # control time measure
+        start_time = time.time()
+        # list of tuples to be supplied to the rolling_window function
+        # order : window length, dataset, observation
+        par_list = []
 
-    # list of tuples to be supplied to the rolling_window function
-    # order : window length, dataset, observation
-    par_list = []
+        for e in range(len(df_list)):
+            for f in range(df_len[e]-w):
+                par_list.append((w, e, f))
 
-    for e in range(len(df_list)):
-        for f in range(df_len[e]-w):
-            par_list.append((w, e, f))
+        # build one large forecast table containing forecasts for all datasets
+        p = mp.Pool()
+        fcts_table = p.starmap(roll_window, par_list)
+        p.close()
+        p.join()
 
-    # build one large forecast table containing forecasts for all datasets
-    p = mp.Pool()
-    fcts_table = p.starmap(roll_window, par_list)
-    p.close()
-    p.join()
+        # convert list of numpy arrays into a dataframe
+        fcts_table_df = pd.DataFrame(fcts_table)
 
-    # convert list of numpy arrays into a dataframe
-    fcts_table_df = pd.DataFrame(fcts_table)
+        # split the forecast table and save it
+        fcts_table_arr = np.asarray(fcts_table)
+        fcts_table_ind = np.delete(np.cumsum(np.asarray(df_len)-w), -1)
+        fcts_table_split = np.split(fcts_table_arr, fcts_table_ind)
 
-    # split the forecast table and save it
-    fcts_table_arr = np.asarray(fcts_table)
-    fcts_table_ind = np.delete(np.cumsum(np.asarray(df_len)-w), -1)
-    fcts_table_split = np.split(fcts_table_arr, fcts_table_ind)
-
-    for g in range(len(df_names)):
-        save_path = path + "Multiproc/MP_" + df_names[g] + ".pkl"
-        fcts_table_df = pd.DataFrame(fcts_table_split[g])
-        fcts_table_df.to_pickle(save_path)
-
-    end_time = time.time()
-    print(end_time-start_time)
+        for g in range(len(df_names)):
+            save_path = path + "Multiproc/MP_" + df_names[g] + (
+                    "_" + str(w) + ".pkl")
+            fcts_table_df = pd.DataFrame(fcts_table_split[g])
+            fcts_table_df.to_pickle(save_path)
+        # control time measure
+        end_time = time.time()
+        print(end_time-start_time)
 
 
 ###############
