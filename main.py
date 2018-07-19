@@ -90,7 +90,7 @@ if run_bond == 1:
     df_test = ind_fcts_1_TU.iloc[1000:1001, 1:]
 
     df = ind_fcts_1_TU
-    w = 1000
+    w = 200
     # parameters for development of new combining methods
     k_cv = 5
 

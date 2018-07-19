@@ -192,8 +192,8 @@ adf_stats = ["Test Statistic", "P-value"]
 
 # RETURNS
 adf_ret = pd.DataFrame(data=np.full((2, 4), np.nan, dtype=float),
-                             columns=tickers,
-                             index=adf_stats)
+                       columns=tickers,
+                       index=adf_stats)
 
 for i in range(4):
     adf_test = adfuller(ret.iloc[:, i])

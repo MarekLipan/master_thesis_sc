@@ -730,7 +730,7 @@ def LASSO_coef(df_train, lambda_1):
     # estimate LASSO
     lasso = linear_model.Lasso(alpha=lambda_1,
                                fit_intercept=False,
-                               max_iter=100000).fit(X, y)
+                               max_iter=10000).fit(X, y)
 
     # which forecasters to keep
     return np.append(True, lasso.coef_ != 0)  # 1s True for y
@@ -751,7 +751,7 @@ def Egalitarian_LASSO(df_train, lambda_2):
     # estimate Egalitarian LASSO via the transformation to LASSO
     egal_lasso = linear_model.Lasso(alpha=lambda_2,
                                     fit_intercept=False,
-                                    max_iter=1000000)
+                                    max_iter=10000)
 
     beta = egal_lasso.fit(X, y-f_bar).coef_ + 1/K
 
@@ -773,7 +773,7 @@ def Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv):
     """
 
     # grid for the pair of shrinkage parameters
-    lambda_grid = np.exp(np.linspace(-20, 2, num=30))
+    lambda_grid = np.exp(np.linspace(-20, 2, num=20))
 
     # length of cross-validation subset
     k_len = int(df_train.shape[0] / k_cv)

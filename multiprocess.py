@@ -27,7 +27,7 @@ multi_bond = 1
 # choose the lengths of the rolling window:
 #
 # length of the rolling window
-w = 1000
+w = 200
 #
 #########################
 # MULTIPROCESSING SCRIPT#
@@ -47,7 +47,7 @@ if multi_bond == 1:
     #            "ind_fcts_1_US", "ind_fcts_5_TU", "ind_fcts_5_FV",
     #            "ind_fcts_5_TY", "ind_fcts_5_US", "ind_fcts_22_TU",
     #            "ind_fcts_22_FV", "ind_fcts_22_TY", "ind_fcts_22_US"]
-    df_names = ["ind_fcts_1_TU"]
+    df_names = ["ind_fcts_1_TU", "ind_fcts_5_TU", "ind_fcts_22_TU"]
 
 # load the datasets
 df_list = []

@@ -13,6 +13,7 @@ import numpy as np
 import itertools
 import random
 from statsmodels.tsa.api import VAR, AR
+from statsmodels.tsa.vector_ar.var_model import is_stable, var_acf
 
 # set the seed for replicability of results
 random.seed(444)
@@ -342,18 +343,13 @@ ind_fcts_22_US.iloc[:, fct_col] = GARCH_22.iloc[:, 3].values
 ######
 # VAR#
 ######
-# fractional differencing parameter estimated using GPH method in R
-# fractionally differencing series
-# def frac_diff(series, d):
-#    new series ...
-#    output = 0
-#    for i in range(1, 101):
-#        denum = np.math.factorial(i)
-#        num = 1
-#        for j in range(i):
-#            num *= (d-j)
-#        output += (series[ind - i] * (num/denum))
-#    return output
+# check stability of VAR coefficients on the whole sample
+# and check ACF of residuals
+for i in var_combs_let[4:]:
+    model = VAR(rvol.loc[:, i])
+    model_fit = model.fit(5)
+    print(is_stable(model_fit.coefs))
+    print(model_fit.resid_acorr(nlags=10))
 
 # roll trough the training data
 for c in var_combs:
