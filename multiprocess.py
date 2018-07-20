@@ -27,7 +27,7 @@ multi_bond = 0
 # choose the lengths of the rolling window:
 #
 # list lengths of the rolling windows
-w_list = [25, 35, 45]
+w_list = [35]
 #
 #########################
 # MULTIPROCESSING SCRIPT#
@@ -38,8 +38,9 @@ path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
 if multi_spf == 1:
     spec_path = "SPF/Balanced_panels/"
     # datasets to be loaded
-    df_names = ["spf_bal_RGDP_1Y", "spf_bal_RGDP_2Y", "spf_bal_HICP_1Y",
-                "spf_bal_HICP_2Y", "spf_bal_UNEM_1Y", "spf_bal_UNEM_2Y"]
+    #df_names = ["spf_bal_RGDP_1Y", "spf_bal_RGDP_2Y", "spf_bal_HICP_1Y",
+    #            "spf_bal_HICP_2Y", "spf_bal_UNEM_1Y", "spf_bal_UNEM_2Y"]
+    df_names = ["spf_bal_RGDP_1Y"]
 if multi_bond == 1:
     spec_path = "Bonds/"
     # datasets to be loaded

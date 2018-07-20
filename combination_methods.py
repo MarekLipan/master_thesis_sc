@@ -147,7 +147,7 @@ def Bates_Granger_2(df_train, df_test, nu=None):
     return df_pred
 
 
-def Bates_Granger_3(df_train, df_test, nu, alpha):
+def Bates_Granger_3(df_train, df_test, alpha, nu=None):
     """
 
     This method convexely combines the weights obtained from Bates-Granger
@@ -741,7 +741,7 @@ def LASSO_coef(df_train, lambda_1):
     # estimate LASSO
     lasso = linear_model.Lasso(alpha=lambda_1,
                                fit_intercept=False,
-                               max_iter=10000).fit(X, y)
+                               max_iter=1000).fit(X, y)
 
     # which forecasters to keep
     return np.append(True, lasso.coef_ != 0)  # 1s True for y
@@ -762,7 +762,7 @@ def Egalitarian_LASSO(df_train, lambda_2):
     # estimate Egalitarian LASSO via the transformation to LASSO
     egal_lasso = linear_model.Lasso(alpha=lambda_2,
                                     fit_intercept=False,
-                                    max_iter=10000)
+                                    max_iter=1000)
 
     beta = egal_lasso.fit(X, y-f_bar).coef_ + 1/K
 
@@ -1266,7 +1266,7 @@ def ANN(df_train, df_test):
     """
     Artificial Neural Network forecast combination method. It uses a single
     hidden layer with up to three logistic nodes, possibly complemented with
-    K linear nodes. The 10-fold cross-validation is used to determine the
+    K linear nodes. The 5-fold cross-validation is used to determine the
     optimal number of nodes.
 
     """
@@ -1323,14 +1323,14 @@ def ANN(df_train, df_test):
                         (X_list[(h * len_Gamma + i) * 3 + p], logistic_nodes),
                         axis=1)
 
-    # search for the best model specification using the 10-fold CV
+    # search for the best model specification using the 5-fold CV
     cv_sq_errors = np.full(len(X_list), 0, dtype=float)
 
-    for i in range(10):
+    for i in range(5):
 
         # train and test indices
         cv_y_train_index = np.full(T, True, dtype=bool)
-        cv_y_train_index[int(i * T/10):int((i+1) * T/10)] = False
+        cv_y_train_index[int(i * T/5):int((i+1) * T/5)] = False
 
         cv_X_train_index = np.append(cv_y_train_index,
                                      np.full(T_all-T, False, dtype=bool))
@@ -1805,12 +1805,19 @@ def AdaBoost(df_train, df_test, phi):
         L = (ARE > phi)*1
 
         # weighted average loss
-        L_bar = np.dot(L, prob)
+        L_bar = np.dot(prob, L)
 
+        # I believe this is a necesarry condition for the AdaBoost algorithm
+        # to work (even though it is not discussed by the author), because,
+        # else if the error is too low, beta becomes > 1 and the model could
+        # get super-overfit on just few observations
+        # L_bar > 1/np.exp(1) ensures, that some weight updating always happens
+        # L_bar = max(L_bar, 1/np.exp(1))
+        L_bar = max(L_bar, 0.5)
         # model confidence
         beta = np.log(1/L_bar)
 
-        # observation weights updating, absolute value for comp. reasons
+        # observation weights updating, absolute value for computational rsns.
         w = np.abs(np.multiply(w, beta**(1-L)))
         w_sum = np.sum(w)
 
