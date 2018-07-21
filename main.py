@@ -8,8 +8,8 @@ This script is used to run the individual scripts.
 import pandas as pd
 
 # switchers
-run_spf = 1
-run_bond = 0
+run_spf = 0
+run_bond = 1
 
 # global paths
 data_path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
@@ -86,11 +86,11 @@ if run_bond == 1:
     ind_fcts_22_US = pd.read_pickle(bond_data_path + "ind_fcts_22_US.pkl")
     
     # testing dataframes for development of new combining methods
-    df_train = ind_fcts_1_TU.iloc[:1000, :]
-    df_test = ind_fcts_1_TU.iloc[1000:1001, 1:]
+    df_train = ind_fcts_1_TU.iloc[:500, :]
+    df_test = ind_fcts_1_TU.iloc[500:501, 1:]
 
     df = ind_fcts_1_TU
-    w = 200
+    w = 500
     # parameters for development of new combining methods
     k_cv = 5
 

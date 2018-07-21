@@ -21,9 +21,11 @@ DataFrame.
 import pandas as pd
 import numpy as np
 import scipy.stats as sps
+import itertools
 from sklearn import linear_model
 from sklearn.decomposition import PCA
 from sklearn.neural_network import MLPRegressor
+import time
 
 """
 SIMPLE METHODS
@@ -964,6 +966,17 @@ def BMA_Marginal_Likelihood(df_train, df_test, iterations, burnin, p_1):
     SSR = sum((y - np.dot(Z, theta_hat))**2)
     S_left = (c/(c+1))*SSR
     S = S_left + S_right
+
+    # scale to first decimal place for numerical reasons
+    # find scaling order
+    S_rescaled = S
+    scaling_factor = 1
+    while (S_rescaled < 0.1):
+        S_rescaled *= 10
+        scaling_factor *= 10
+    # rescale S (prevent overflow)
+    S = S*scaling_factor
+
     k = sum(models[0, :])
     marginal_lik[0] = ((c+1)**(-k))*(S**(-((T-1)/2)))
     theta_hats += [theta_hat]
@@ -1014,6 +1027,10 @@ def BMA_Marginal_Likelihood(df_train, df_test, iterations, burnin, p_1):
         SSR = sum((y - np.dot(Z, theta_hat))**2)
         S_left = (c/(c+1))*SSR
         S = S_left + S_right
+
+        # rescale S (prevent overflow)
+        S = S*scaling_factor
+
         k = sum(m_star)
         marginal_lik_m_star = ((c+1)**(-k))*(S**(-((T-1)/2)))
 
@@ -1062,6 +1079,106 @@ def BMA_Marginal_Likelihood(df_train, df_test, iterations, burnin, p_1):
                 )
 
     pred = np.dot(model_fcts, posterior_prob)
+
+    df_pred = pd.DataFrame(
+            {"BMA (Marginal Likelihood)":  pred},
+            index=df_test.index)
+
+    return df_pred
+
+
+def BMA_Marginal_Likelihood_exh(df_train, df_test):
+    """
+
+    The combination of forecasts using the bayesian model averaging. In this
+    case, the usual marginal likelihoods are used to compute the posterior
+    model probabilities. The posterior probabilities are then used as weights
+    to combine the models into the single forecast.
+
+    Exhaustive computation for all 2**K models. It is possible when the number
+    of individual forecasts is not too high.
+
+    """
+
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+    T = df_train.shape[0]
+    T_oos = df_test.shape[0]
+    # g-prior parameter
+    c = float(K**2)
+    # separate real value and individual forecasts (for both train and oos)
+    y = df_train.iloc[:, 0].values
+    multid_y = y[:, np.newaxis]
+    F_all = np.concatenate((df_train.iloc[:, 1:].values, df_test.values),
+                           axis=0)
+    # list of variables
+    var_list = np.hsplit(F_all, K)
+    # list containing vectors of all model by the number of variables
+    model_list = []
+    # null model
+    model_list += [np.full((1, T+T_oos, 1), 1, dtype=float)]
+    # single variable models
+    model_list += [np.insert(np.squeeze(list(itertools.combinations(
+            var_list, 1)), axis=3)[:, :, np.newaxis], 0, 1, axis=2)]
+    # 2-(K-1) variable combinations models
+    for i in range(2, K):
+        model_list += [np.insert(np.swapaxes(np.squeeze(list(
+                itertools.combinations(var_list, i)),
+                axis=3), 1, 2), 0, 1, axis=2)]
+    # K variable model
+    model_list += [np.insert(F_all[np.newaxis, :, :], 0, 1, axis=2)]
+
+    # initializations
+    marginal_lik = np.full((2**K, 1), fill_value=np.nan, dtype=float)
+    oos_fcts = np.full((df_test.shape[0], 2**K), np.nan, dtype=float)
+
+    # compute marginal likelihoods
+    # precompute the right part (same in every case)
+    y_bar = np.mean(y)
+    S_right = sum((y - y_bar)**2)/(c+1)
+    # start indices for sets with different numbers of variables
+    start_ind = 0
+    # compute the marginal likelihoods for all sets of models
+    for i in range(len(model_list)):
+        # unpack the training design matrix
+        Z = model_list[i][:, :T, :]
+        Z_t = np.swapaxes(Z, 1, 2)
+        # unpack out-of-sample testing matrix
+        Z_oos = model_list[i][:, T:, :]
+        # estimate the model in sample
+        theta_hat = np.matmul(np.linalg.inv(np.matmul(Z_t, Z)),
+                              np.matmul(Z_t, multid_y))
+        # sum of squared residuals
+        SSR = np.sum((multid_y - np.matmul(Z, theta_hat))**2, axis=1)
+        S_left = (c/(c+1))*SSR
+        S = S_left + S_right
+
+        # scale to first decimal place for numerical reasons
+        # find the scaling factor
+        if i == 0:
+            S_rescaled = np.copy(S)
+            scaling_factor = 1
+            while (S_rescaled < 0.1):
+                S_rescaled *= 10
+                scaling_factor *= 10
+        # rescale S (to prevent overflow)
+        S *= scaling_factor
+
+        # update set end index
+        end_ind = start_ind + Z.shape[0]
+        # compute and save marginal likelihood for the given set of models
+        marginal_lik[start_ind:end_ind, :] = ((c+1)**(-i))*(S**(-((T-1)/2)))
+        # out-of-sample forecasts
+        oos_fcts[:, start_ind:end_ind] = np.transpose(
+                np.squeeze(np.matmul(Z_oos, theta_hat), axis=2))
+        # update set start index
+        start_ind = end_ind
+
+    # model posterior probabilities
+    marginal_lik_sum = np.sum(marginal_lik)
+    posterior_prob = marginal_lik / marginal_lik_sum
+
+    pred = np.squeeze(np.dot(oos_fcts, posterior_prob), axis=1)
 
     df_pred = pd.DataFrame(
             {"BMA (Marginal Likelihood)":  pred},
@@ -1126,6 +1243,17 @@ def BMA_Predictive_Likelihood(df_train, df_test, iterations, burnin, p_1,
     SSR = sum((y_star - np.dot(Z_star, theta_hat))**2)
     S_left = (c/(c+1))*SSR
     S = S_left + S_right
+
+    # scale to first decimal place for numerical reasons
+    # find scaling order
+    S_rescaled = S
+    scaling_factor = 1
+    while (S_rescaled < 0.1):
+        S_rescaled *= 10
+        scaling_factor *= 10
+    # rescale S (prevent overflow)
+    S = S*scaling_factor
+
     lambda_star = ((c+1) / c) * np.dot(Z_star_t, Z_star)
     lambda_star_inv = np.linalg.inv(lambda_star)
     m_len = y_star.shape[0]
@@ -1191,6 +1319,10 @@ def BMA_Predictive_Likelihood(df_train, df_test, iterations, burnin, p_1,
         SSR = sum((y_star - np.dot(Z_star, theta_hat))**2)
         S_left = (c/(c+1))*SSR
         S = S_left + S_right
+
+        # rescale S (prevent overflow)
+        S = S*scaling_factor
+
         lambda_star = ((c+1) / c) * np.dot(Z_star_t, Z_star)
         lambda_star_inv = np.linalg.inv(lambda_star)
         epsilon = y_tilde - np.dot(Z_tilde, gamma)
@@ -1248,6 +1380,129 @@ def BMA_Predictive_Likelihood(df_train, df_test, iterations, burnin, p_1,
                 )
 
     pred = np.dot(model_fcts, posterior_prob)
+
+    df_pred = pd.DataFrame(
+            {"BMA (Predictive Likelihood)":  pred},
+            index=df_test.index)
+
+    return df_pred
+
+
+def BMA_Predictive_Likelihood_exh(df_train, df_test, l_share):
+    """
+
+    The combination of forecasts using the bayesian model averaging. In this
+    case, the usual predictive densities are used to compute the posterior
+    model probabilities. The posterior probabilities are then used as weights
+    to combine the models into the single forecast.
+
+    Exhaustive computation for all 2**K models. It is possible when the number
+    of individual forecasts is not too high.
+
+    """
+
+    # number of individual forecasts and number of periods
+    K = df_test.shape[1]
+    T = df_train.shape[0]
+    T_oos = df_test.shape[0]
+    # g-prior parameter
+    c = float(K**3)
+    # separate real value and individual forecasts (for both train and oos)
+    # and separate training and the hold-out sample
+    m_share = 1 - l_share
+    y = df_train.iloc[:, 0].values
+    m_len = int(np.round(m_share*T))
+    l_len = T-m_len
+    y_star = y[:m_len][:, np.newaxis]
+    y_tilde = y[m_len:][:, np.newaxis]
+    F_all = np.concatenate((df_train.iloc[:, 1:].values, df_test.values),
+                           axis=0)
+    # list of variables
+    var_list = np.hsplit(F_all, K)
+    # list containing vectors of all model by the number of variables
+    model_list = []
+    # null model
+    model_list += [np.full((1, T+T_oos, 1), 1, dtype=float)]
+    # single variable models
+    model_list += [np.insert(np.squeeze(list(itertools.combinations(
+            var_list, 1)), axis=3)[:, :, np.newaxis], 0, 1, axis=2)]
+    # 2-(K-1) variable combinations models
+    for i in range(2, K):
+        model_list += [np.insert(np.swapaxes(np.squeeze(list(
+                itertools.combinations(var_list, i)),
+                axis=3), 1, 2), 0, 1, axis=2)]
+    # K variable model
+    model_list += [np.insert(F_all[np.newaxis, :, :], 0, 1, axis=2)]
+
+    # initializations
+    predictive_lik = np.full((2**K, 1), fill_value=np.nan, dtype=float)
+    oos_fcts = np.full((df_test.shape[0], 2**K), np.nan, dtype=float)
+
+    # predictive likelihood calculation for all model sets
+    # precompute the right part (same in every case)
+    y_star_bar = np.mean(y_star)
+    S_right = sum((y_star - y_star_bar)**2)/(c+1)
+
+    # start indices for sets with different numbers of variables
+    start_ind = 0
+
+    # compute the predictive likelihoods for all sets of models
+    for i in range(len(model_list)):
+        # unpack the training design matrix
+        Z_star = model_list[i][:, :m_len, :]
+        Z_star_t = np.swapaxes(Z_star, 1, 2)
+        Z_tilde = model_list[i][:, m_len:T, :]
+        Z_tilde_t = np.swapaxes(Z_tilde, 1, 2)
+        # unpack out-of-sample testing matrix
+        Z_oos = model_list[i][:, T:, :]
+        # estimate the model in sample
+        theta_hat = np.matmul(np.linalg.inv(np.matmul(Z_star_t, Z_star)),
+                              np.matmul(Z_star_t, y_star))
+        gamma = (c/(c+1)) * theta_hat
+        # sum of squared residuals
+        SSR = np.sum((y_star - np.matmul(Z_star, theta_hat))**2, axis=1)
+        S_left = (c/(c+1))*SSR
+        S = S_left + S_right
+
+        # scale to first decimal place for numerical reasons
+        # find the scaling factor
+        if i == 0:
+            S_rescaled = np.copy(S)
+            scaling_factor = 1
+            while (S_rescaled < 0.1):
+                S_rescaled *= 10
+                scaling_factor *= 10
+        # rescale S (to prevent overflow)
+        S *= scaling_factor
+
+        lambda_star = ((c+1) / c) * np.matmul(Z_star_t, Z_star)
+        lambda_star_inv = np.linalg.inv(lambda_star)
+        epsilon = y_tilde - np.matmul(Z_tilde, gamma)
+        epsilon_t = np.swapaxes(epsilon, 1, 2)
+        mid = np.linalg.inv(np.eye(l_len) + np.matmul(
+                        np.matmul(Z_tilde, lambda_star_inv), Z_tilde_t))
+        term_1 = S**(m_len/2)
+        term_2 = (
+                (np.linalg.det(lambda_star) / np.linalg.det(
+                        lambda_star + np.matmul(Z_tilde_t, Z_tilde)))**(1/2)
+                )[:, np.newaxis]
+        term_3 = (S + np.squeeze(np.matmul(np.matmul(epsilon_t, mid), epsilon),
+                                 axis=2)*scaling_factor)**(-T/2)
+        # update set end index
+        end_ind = start_ind + Z_star.shape[0]
+        # compute and save predictive likelihoods for the given set of models
+        predictive_lik[start_ind:end_ind, :] = term_1 * term_2 * term_3
+        # out-of-sample forecasts
+        oos_fcts[:, start_ind:end_ind] = np.transpose(
+                np.squeeze(np.matmul(Z_oos, theta_hat), axis=2))
+        # update set start index
+        start_ind = end_ind
+
+    # model posterior probabilities
+    predictive_lik_sum = np.sum(predictive_lik)
+    posterior_prob = predictive_lik / predictive_lik_sum
+
+    pred = np.squeeze(np.dot(oos_fcts, posterior_prob), axis=1)
 
     df_pred = pd.DataFrame(
             {"BMA (Predictive Likelihood)":  pred},
