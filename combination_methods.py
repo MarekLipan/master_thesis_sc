@@ -25,7 +25,6 @@ import itertools
 from sklearn import linear_model
 from sklearn.decomposition import PCA
 from sklearn.neural_network import MLPRegressor
-import time
 
 """
 SIMPLE METHODS
@@ -99,6 +98,7 @@ def Bates_Granger_2(df_train, df_test, nu=None):
     be combined.
 
     """
+
     # number of individual forecasts and number of periods
     K = df_test.shape[1]
     T = df_train.shape[0]
@@ -151,7 +151,7 @@ def Bates_Granger_2(df_train, df_test, nu=None):
 
 def Bates_Granger_3(df_train, df_test, alpha, nu=None):
     """
-
+    start_time = time.time()
     This method convexely combines the weights obtained from Bates-Granger
     method (1) and the preceeding weights, assuming that omega_{i,1} = 1 / K
     for all i. The combinations is determined by the parameter alpha.
@@ -252,6 +252,7 @@ def Bates_Granger_5(df_train, df_test, W):
     of forecast to be combined.
 
     """
+
     # number of individual forecasts and number of periods
     K = df_test.shape[1]
     T = df_train.shape[0]
@@ -310,6 +311,7 @@ def Granger_Ramanathan_1(df_train, df_test):
     forecasts and produce predictions for testing dataset.
 
     """
+
     # define y, F
     y = df_train.iloc[:, 0]
     F = df_train.iloc[:, 1:]
@@ -743,7 +745,7 @@ def LASSO_coef(df_train, lambda_1):
     # estimate LASSO
     lasso = linear_model.Lasso(alpha=lambda_1,
                                fit_intercept=False,
-                               max_iter=1000).fit(X, y)
+                               max_iter=1000000).fit(X, y)
 
     # which forecasters to keep
     return np.append(True, lasso.coef_ != 0)  # 1s True for y
@@ -764,7 +766,7 @@ def Egalitarian_LASSO(df_train, lambda_2):
     # estimate Egalitarian LASSO via the transformation to LASSO
     egal_lasso = linear_model.Lasso(alpha=lambda_2,
                                     fit_intercept=False,
-                                    max_iter=1000)
+                                    max_iter=1000000)
 
     beta = egal_lasso.fit(X, y-f_bar).coef_ + 1/K
 
@@ -1825,9 +1827,7 @@ def Bagging(df_train, df_test, B):
                         np.multiply(F_f, eps_f),
                         np.transpose(np.multiply(F_g, eps_g), axes=(0, 2, 1))
                         )
-
     S = S_sum / (p*m)
-
     # compute H
     H_sum = np.full((B, K, K), 0, dtype=float)
     for e in range(p):
@@ -1870,6 +1870,9 @@ def Bagging(df_train, df_test, B):
                     df_test.iloc[:, sel_ind].values,
                     gamma_hat
                     ).flatten()
+        else:
+            # if no variable passes the pre-test, the prediction is 0
+            pred_mat[:, i] = 0
 
     # aggregation of forecasts
     pred = np.nanmean(pred_mat, axis=1)
@@ -2186,6 +2189,7 @@ def cAPM_Q_learning(df_train, df_test, MinRPT, MaxRPT_r1, MaxRPT, alpha,
     strategies and utilizing the wisdom of the crowd via Q-learning.
 
     """
+
     # number of periods in samples
     T = df_train.shape[0]
     T_test = df_test.shape[0]
