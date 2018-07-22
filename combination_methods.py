@@ -773,7 +773,8 @@ def Egalitarian_LASSO(df_train, lambda_2):
     return beta
 
 
-def Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv):
+def Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv, grid_l, grid_h,
+                               grid_size):
     """
     The 2-step Egalitarian LASSO procedures. Firstly, we need to define
     the LASSO function as a first step and Egalitarian LASSO function as
@@ -788,7 +789,7 @@ def Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv):
     """
 
     # grid for the pair of shrinkage parameters
-    lambda_grid = np.exp(np.linspace(-20, 2, num=20))
+    lambda_grid = np.exp(np.linspace(grid_l, grid_h, num=grid_size))
 
     # length of cross-validation subset
     k_len = int(df_train.shape[0] / k_cv)
@@ -902,18 +903,20 @@ def Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv):
 
     # estimation with optimal lambda
     df_coef = LASSO_coef(df_train, lambda_star_1)
-    beta = Egalitarian_LASSO(df_train.loc[:, df_coef], lambda_star_2)
-
-    # predictions
-    df_test_rd = df_test.loc[:, df_coef[1:]]
-
-    if beta.size == 1:
-        final_pred = df_test_rd * beta
+    if np.sum(df_coef) > 1:
+        beta = Egalitarian_LASSO(df_train.loc[:, df_coef], lambda_star_2)
+        # predictions
+        df_test_rd = df_test.loc[:, df_coef[1:]]
+        if beta.size == 1:
+            final_pred = df_test_rd * beta
+        else:
+            final_pred = df_test_rd.dot(beta)
     else:
-        final_pred = df_test_rd.dot(beta)
+        # in case all variables were pushed to zero (lambda too high)
+        final_pred = 0
 
     df_pred = pd.DataFrame({"Two-Step Egalitarian LASSO": final_pred},
-                           index=df_test_rd.index)
+                           index=df_test.index)
 
     return df_pred
 
@@ -1608,10 +1611,15 @@ def ANN(df_train, df_test):
             cv_X_test = X_list[j][cv_X_test_index, :]
 
             # estimate the model
-            est_par = np.dot(
-                np.linalg.inv(np.dot(np.transpose(cv_X_train), cv_X_train)),
-                np.dot(np.transpose(cv_X_train), cv_y_train)
-                )
+            # first, check if the X'X matrix is regular
+            in_mat = np.dot(np.transpose(cv_X_train), cv_X_train)
+            if np.linalg.det(in_mat) == 0:
+                est_par = np.full(cv_X_train.shape[1], 0, dtype=float)
+            else:
+                est_par = np.dot(
+                    np.linalg.inv(in_mat),
+                    np.dot(np.transpose(cv_X_train), cv_y_train)
+                    )
 
             # predict
             cv_y_pred = np.dot(cv_X_test, est_par)
@@ -2326,7 +2334,11 @@ def cAPM_Q_learning(df_train, df_test, MinRPT, MaxRPT_r1, MaxRPT, alpha,
                 error_cl_count[closest_cl] += 1
                 # order: small, medium, large
                 error_cl_mean = np.sort(error_cl_mean)
-                
+            # in case the cluster means do not differ (very low probability):
+            # spread them
+            if np.unique(error_cl_mean).size < 3:
+                error_cl_mean += np.array([-1e-10, 1e-10, 2e-10])
+
             # initialize delta matrix (confidence in the crowd)
 
         else:
