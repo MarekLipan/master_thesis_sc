@@ -79,45 +79,9 @@ for i in range(ind_fcts_1_TU.shape[0]-w):
 
 
 # create accuracy tables
-acc_table_ind_fcts_1_TU = ft.create_acc_table(df=ind_fcts_1_TU, w=500,
-                                        proc="single",
-                                        df_name="ind_fcts_1_TU_"+str(w))
-
-
-# all tables
-acc_table_ind_fcts_1_TU = ft.create_acc_table(df=ind_fcts_1_TU, w=500,
-                                        proc="multiple",
-                                        df_name="ind_fcts_1_TU_"+str(w))
-
-acc_table_ind_fcts_1_TU = ft.create_acc_table(df=ind_fcts_1_TU, w=500,
-                                        proc="multiple",
-                                        df_name="ind_fcts_1_TU_"+str(w))
-
-
-acc_table_ind_fcts_5_TU = ft.create_acc_table(df=ind_fcts_5_TU, w=500,
-                                        proc="multiple",
-                                        df_name="ind_fcts_5_TU_"+str(w))
-
-acc_table_ind_fcts_22_TU = ft.create_acc_table(df=ind_fcts_22_TU, w=500,
-                                        proc="multiple",
-                                        df_name="ind_fcts_22_TU_"+str(w))
-
-
-# export accuracy tables to tex
-ft.gen_tex_table(tbl=acc_table_ind_fcts_1_TU,
-                 cap="Combined 1-step-ahead forecasts of the realized volatility of log-returns of TU (2 Year) futures",
-                 file_name="ind_fcts_1_TU",
-                 r=6)
-
-ft.gen_tex_table(tbl=acc_table_ind_fcts_5_TU,
-                 cap="Combined 5-steps-ahead forecasts of the realized volatility of log-returns of TU (2 Year) futures",
-                 file_name="ind_fcts_5_TU",
-                 r=6)
-
-ft.gen_tex_table(tbl=acc_table_ind_fcts_22_TU,
-                 cap="Combined 22-steps-ahead forecasts of the realized volatility of log-returns of TU (2 Year) futures",
-                 file_name="ind_fcts_22_TU",
-                 r=6)
+#acc_table_ind_fcts_1_TU = ft.create_acc_table(df=ind_fcts_1_TU, w=500,
+#                                        proc="single",
+#                                        df_name="ind_fcts_1_TU_"+str(w))
 
 for w in [100, 200, 500]:
 
@@ -175,5 +139,51 @@ for w in [100, 200, 500]:
                      cap="Combined 1-step-ahead forecasts of the realized volatility of log-returns of TU (2 Year) futures (w="+str(w)+")",
                      file_name="ind_fcts_1_TU_"+str(w),
                      r=6)
+    ft.gen_tex_table(tbl=acc_table_ind_fcts_5_TU,
+                     cap="Combined 5-steps-ahead forecasts of the realized volatility of log-returns of TU (2 Year) futures (w="+str(w)+")",
+                     file_name="ind_fcts_5_TU_"+str(w),
+                     r=6)
+    ft.gen_tex_table(tbl=acc_table_ind_fcts_22_TU,
+                     cap="Combined 22-steps-ahead forecasts of the realized volatility of log-returns of TU (2 Year) futures (w="+str(w)+")",
+                     file_name="ind_fcts_5_TU_"+str(w),
+                     r=6)
 
+    ft.gen_tex_table(tbl=acc_table_ind_fcts_1_FV,
+                     cap="Combined 1-step-ahead forecasts of the realized volatility of log-returns of FV (5 Year) futures (w="+str(w)+")",
+                     file_name="ind_fcts_1_FV_"+str(w),
+                     r=6)
+    ft.gen_tex_table(tbl=acc_table_ind_fcts_5_FV,
+                     cap="Combined 5-steps-ahead forecasts of the realized volatility of log-returns of FV (5 Year) futures (w="+str(w)+")",
+                     file_name="ind_fcts_5_FV_"+str(w),
+                     r=6)
+    ft.gen_tex_table(tbl=acc_table_ind_fcts_22_FV,
+                     cap="Combined 22-steps-ahead forecasts of the realized volatility of log-returns of FV (5 Year) futures (w="+str(w)+")",
+                     file_name="ind_fcts_22_FV_"+str(w),
+                     r=6)
+
+    ft.gen_tex_table(tbl=acc_table_ind_fcts_1_TY,
+                     cap="Combined 1-step-ahead forecasts of the realized volatility of log-returns of TY (10 Year) futures (w="+str(w)+")",
+                     file_name="ind_fcts_1_TY_"+str(w),
+                     r=6)
+    ft.gen_tex_table(tbl=acc_table_ind_fcts_5_TY,
+                     cap="Combined 5-steps-ahead forecasts of the realized volatility of log-returns of TY (10 Year) futures (w="+str(w)+")",
+                     file_name="ind_fcts_5_TY_"+str(w),
+                     r=6)
+    ft.gen_tex_table(tbl=acc_table_ind_fcts_22_TY,
+                     cap="Combined 22-steps-ahead forecasts of the realized volatility of log-returns of TY (10 Year) futures (w="+str(w)+")",
+                     file_name="ind_fcts_22_TY_"+str(w),
+                     r=6)
+
+    ft.gen_tex_table(tbl=acc_table_ind_fcts_1_US,
+                     cap="Combined 1-step-ahead forecasts of the realized volatility of log-returns of US (30 Year) futures (w="+str(w)+")",
+                     file_name="ind_fcts_1_US_"+str(w),
+                     r=6)
+    ft.gen_tex_table(tbl=acc_table_ind_fcts_5_US,
+                     cap="Combined 5-steps-ahead forecasts of the realized volatility of log-returns of US (30 Year) futures (w="+str(w)+")",
+                     file_name="ind_fcts_5_US_"+str(w),
+                     r=6)
+    ft.gen_tex_table(tbl=acc_table_ind_fcts_22_US,
+                     cap="Combined 22-steps-ahead forecasts of the realized volatility of log-returns of US (30 Year) futures (w="+str(w)+")",
+                     file_name="ind_fcts_22_US_"+str(w),
+                     r=6)
 # END OF FILE

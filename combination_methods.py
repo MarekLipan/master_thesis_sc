@@ -1710,15 +1710,15 @@ def EP_NN(df_train, df_test, sigma, gen, n):
         logistic_nodes = 1 / (1 + np.exp(-np.matmul(Z, Gamma)))
         X = np.concatenate((X_prep, logistic_nodes), axis=2)
         X_t = np.swapaxes(X, 1, 2)
-        est_par = np.matmul(
-                np.linalg.inv(np.matmul(X_t, X)),
-                np.matmul(X_t, Y)
-                )
-        Y_pred = np.matmul(X, est_par)
-        MSE_vec = np.sum((Y - Y_pred)**2, axis=1)/T
-        # step 3
-        sort_ind = np.argsort(MSE_vec.flatten())
-        Gamma = Gamma[sort_ind, :, :]
+        in_mat = np.matmul(X_t, X)
+        # first, check if the X'X matrix is regular
+        if np.all(np.linalg.det(in_mat) != 0):
+            est_par = np.matmul(np.linalg.inv(in_mat), np.matmul(X_t, Y))
+            Y_pred = np.matmul(X, est_par)
+            MSE_vec = np.sum((Y - Y_pred)**2, axis=1)/T
+            # step 3
+            sort_ind = np.argsort(MSE_vec.flatten())
+            Gamma = Gamma[sort_ind, :, :]
         # step 4
         eta = np.concatenate(
                 (eta_prep, sigma * np.random.randn(evol_size, K+1, 3)),
