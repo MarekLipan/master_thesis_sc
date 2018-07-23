@@ -2355,6 +2355,10 @@ def cAPM_Q_learning(df_train, df_test, MinRPT, MaxRPT_r1, MaxRPT, alpha,
                 closest_cl = (np.abs(error_cl_mean - inc_error)).argmin()
                 error_cl_mean[closest_cl] = (error_cl_count[closest_cl] * error_cl_mean[closest_cl] + inc_error) / (error_cl_count[closest_cl] + 1)
                 error_cl_count[closest_cl] += 1
+            # in case the cluster means do not differ (very low probability):
+            # spread them
+            if np.unique(error_cl_mean).size < 3:
+                error_cl_mean += np.array([-1e-10, 1e-10, 2e-10])
 
         # use IQR to determine outlier error threshold
         Q3, Q1 = np.percentile(abs_errors, [75, 25])

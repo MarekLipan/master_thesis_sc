@@ -21,13 +21,13 @@ import time
 ################
 #
 # choose application:
-multi_spf = 1
-multi_bond = 0
+multi_spf = 0
+multi_bond = 1
 #
 # choose the lengths of the rolling window:
 #
 # list lengths of the rolling windows
-w_list = [35]
+w_list = [100, 200, 500]
 #
 #########################
 # MULTIPROCESSING SCRIPT#

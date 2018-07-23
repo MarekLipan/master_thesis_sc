@@ -8,8 +8,8 @@ This script is used to run the individual scripts.
 import pandas as pd
 
 # switchers
-run_spf = 1
-run_bond = 0
+run_spf = 0
+run_bond = 1
 
 # global paths
 data_path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
