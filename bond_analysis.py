@@ -20,7 +20,7 @@ np.random.seed(444)
 
 
 # testing
-w=500
+w=100
 for i in range(ind_fcts_1_TU.shape[0]-w):
     start_time = time.time()
     df_train = ind_fcts_1_TU.iloc[i:(w+i), :]
@@ -51,10 +51,11 @@ for i in range(ind_fcts_1_TU.shape[0]-w):
         cm.BMA_Predictive_Likelihood_exh(df_train, df_test, l_share=0.1),
         cm.ANN(df_train, df_test),
         cm.EP_NN(df_train, df_test, sigma=0.05, gen=200, n=16),
-        cm.Bagging(df_train, df_test, B=500),
+        cm.Bagging(df_train, df_test, B=500, threshold=1.28),
         cm.Componentwise_Boosting(df_train, df_test, nu=0.1),
         cm.AdaBoost(df_train, df_test, phi=0.1),
-        cm.cAPM_Constant(df_train, df_test, MaxRPT_r1=0.9, MaxRPT=0.01,no_rounds=10),
+        cm.cAPM_Constant(df_train, df_test, MaxRPT_r1=0.9, MaxRPT=0.01,
+                         no_rounds=10),
         cm.cAPM_Q_learning(df_train, df_test, MinRPT=0.0001, MaxRPT_r1=0.9,
                            MaxRPT=0.01, alpha=0.7, no_rounds=10),
         cm.MK(df_train, df_test)
@@ -70,10 +71,12 @@ for i in range(ind_fcts_1_TU.shape[0]-w):
     df_train = ind_fcts_1_TU.iloc[i:(w+i), :]
     df_test = ind_fcts_1_TU.iloc[(w+i):(w+i+1), 1:]
     ############################
-    cm.Bagging(df_train, df_test, B=500)
+    pred = cm.BMA_Predictive_Likelihood_exh(df_train, df_test, l_share=0.1)
     ############################
     end_time = time.time()
     print(str(i) + ": " + str(end_time-start_time))
+    print("prediction: " + str(pred.values[0][0]))
+
 
 # create accuracy tables
 acc_table_ind_fcts_1_TU = ft.create_acc_table(df=ind_fcts_1_TU, w=500,

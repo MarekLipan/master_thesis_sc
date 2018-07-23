@@ -8,8 +8,8 @@ This script is used to run the individual scripts.
 import pandas as pd
 
 # switchers
-run_spf = 0
-run_bond = 1
+run_spf = 1
+run_bond = 0
 
 # global paths
 data_path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
@@ -52,7 +52,7 @@ if run_spf == 1:
     df_test = spf_bal_RGDP_1Y.iloc[40:44, 1:]
 
     df = spf_bal_RGDP_1Y
-    w = 40
+    w = 35
 
     # parameters for development of new combining methods
 
@@ -70,7 +70,7 @@ if run_bond == 1:
     # read the prepared DFs
     ret = pd.read_pickle(bond_data_path + "ret.pkl")
     rvol = pd.read_pickle(bond_data_path + "rvol.pkl")
-    
+
     # read prepared individual forecasts
     ind_fcts_1_TU = pd.read_pickle(bond_data_path + "ind_fcts_1_TU.pkl")
     ind_fcts_5_TU = pd.read_pickle(bond_data_path + "ind_fcts_5_TU.pkl")
@@ -84,7 +84,7 @@ if run_bond == 1:
     ind_fcts_1_US = pd.read_pickle(bond_data_path + "ind_fcts_1_US.pkl")
     ind_fcts_5_US = pd.read_pickle(bond_data_path + "ind_fcts_5_US.pkl")
     ind_fcts_22_US = pd.read_pickle(bond_data_path + "ind_fcts_22_US.pkl")
-    
+
     # testing dataframes for development of new combining methods
     df_train = ind_fcts_1_TU.iloc[:500, :]
     df_test = ind_fcts_1_TU.iloc[500:501, 1:]

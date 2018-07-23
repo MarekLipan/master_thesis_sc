@@ -27,7 +27,7 @@ multi_bond = 0
 # choose the lengths of the rolling window:
 #
 # list lengths of the rolling windows
-w_list = [25]
+w_list = [35]
 #
 #########################
 # MULTIPROCESSING SCRIPT#
@@ -38,17 +38,16 @@ path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
 if multi_spf == 1:
     spec_path = "SPF/Balanced_panels/"
     # datasets to be loaded
-    #df_names = ["spf_bal_RGDP_1Y", "spf_bal_RGDP_2Y", "spf_bal_HICP_1Y",
-    #            "spf_bal_HICP_2Y", "spf_bal_UNEM_1Y", "spf_bal_UNEM_2Y"]
-    df_names = ["spf_bal_RGDP_1Y"]
+    df_names = ["spf_bal_RGDP_1Y", "spf_bal_RGDP_2Y", "spf_bal_HICP_1Y",
+                "spf_bal_HICP_2Y", "spf_bal_UNEM_1Y", "spf_bal_UNEM_2Y"]
+
 if multi_bond == 1:
     spec_path = "Bonds/"
     # datasets to be loaded
-    # df_names = ["ind_fcts_1_TU", "ind_fcts_1_FV", "ind_fcts_1_TY",
-    #            "ind_fcts_1_US", "ind_fcts_5_TU", "ind_fcts_5_FV",
-    #            "ind_fcts_5_TY", "ind_fcts_5_US", "ind_fcts_22_TU",
-    #            "ind_fcts_22_FV", "ind_fcts_22_TY", "ind_fcts_22_US"]
-    df_names = ["ind_fcts_1_TU"]
+    df_names = ["ind_fcts_1_TU", "ind_fcts_1_FV", "ind_fcts_1_TY",
+                "ind_fcts_1_US", "ind_fcts_5_TU", "ind_fcts_5_FV",
+                "ind_fcts_5_TY", "ind_fcts_5_US", "ind_fcts_22_TU",
+                "ind_fcts_22_FV", "ind_fcts_22_TY", "ind_fcts_22_US"]
 
 # load the datasets
 df_list = []
@@ -103,41 +102,44 @@ def roll_window(w_len, df_ind, obs_ind):
 
 if __name__ == '__main__':
 
-    # repeat the whole cycle for all defined rolling window lengths
-    for x in w_list:
-        w = x
-        # control time measure
-        start_time = time.time()
-        # list of tuples to be supplied to the rolling_window function
-        # order : window length, dataset, observation
-        par_list = []
-
+    # for all the rolling window lengths
+    for w in w_list:
+        # for all the data sets
         for e in range(len(df_list)):
+            # control time measure
+            start_time = time.time()
+            # list of tuples to be supplied to the rolling_window function
+            # order : window length, dataset, observation
+            par_list = []
             for f in range(df_len[e]-w):
                 par_list.append((w, e, f))
 
-        # build one large forecast table containing forecasts for all datasets
-        p = mp.Pool()
-        fcts_table = p.starmap(roll_window, par_list)
-        p.close()
-        p.join()
+            # multiprocessing
+            p = mp.Pool()
+            fcts_table = p.starmap(roll_window, par_list)
+            p.close()
+            p.join()
 
-        # convert list of numpy arrays into a dataframe
-        fcts_table_df = pd.DataFrame(fcts_table)
-
-        # split the forecast table and save it
-        fcts_table_arr = np.asarray(fcts_table)
-        fcts_table_ind = np.delete(np.cumsum(np.asarray(df_len)-w), -1)
-        fcts_table_split = np.split(fcts_table_arr, fcts_table_ind)
-
-        for g in range(len(df_names)):
-            save_path = path + "Multiproc/MP_" + df_names[g] + (
-                    "_" + str(w) + ".pkl")
-            fcts_table_df = pd.DataFrame(fcts_table_split[g])
+            # convert list of numpy arrays into a dataframe
+            fcts_table_df = pd.DataFrame(fcts_table)
+            save_path = path + "Multiproc/MP_"+df_names[e]+("_"+str(w)+".pkl")
             fcts_table_df.to_pickle(save_path)
-        # control time measure
-        end_time = time.time()
-        print(end_time-start_time)
+
+            # split the forecast table and save it
+            #fcts_table_arr = np.asarray(fcts_table)
+            #fcts_table_ind = np.delete(np.cumsum(np.asarray(df_len)-w), -1)
+            #fcts_table_split = np.split(fcts_table_arr, fcts_table_ind)
+
+            #for g in range(len(df_names)):
+            #    save_path = path + "Multiproc/MP_" + df_names[g] + (
+            #            "_" + str(w) + ".pkl")
+            #    fcts_table_df = pd.DataFrame(fcts_table_split[g])
+            #    fcts_table_df.to_pickle(save_path)
+
+            # control time measure
+            end_time = time.time()
+            print("Finished: "+df_names[e]+" (w = "+str(w)+") "+"in: "+str(
+                    end_time-start_time))
 
 
 ###############

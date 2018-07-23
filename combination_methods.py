@@ -896,11 +896,10 @@ def Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv, grid_l, grid_h,
                     lambda_mat.iloc[i, j] = np.inf
 
     # optimal lambda (multiple minima may occur, select the first one)
-    lamda_star_1_ind, lambda_star_2_ind = np.divmod(
-            np.argmin(lambda_mat.values), sel_forecast_mat.shape[0])
-    lambda_star_1 = lambda_grid[lamda_star_1_ind]
+    lambda_star_1_ind, lambda_star_2_ind = np.divmod(
+            np.argmin(lambda_mat.values), lambda_mat.shape[1])
+    lambda_star_1 = lambda_grid[lambda_star_1_ind]
     lambda_star_2 = lambda_grid[lambda_star_2_ind]
-
     # estimation with optimal lambda
     df_coef = LASSO_coef(df_train, lambda_star_1)
     if np.sum(df_coef) > 1:
@@ -908,7 +907,7 @@ def Two_Step_Egalitarian_LASSO(df_train, df_test, k_cv, grid_l, grid_h,
         # predictions
         df_test_rd = df_test.loc[:, df_coef[1:]]
         if beta.size == 1:
-            final_pred = df_test_rd * beta
+            final_pred = (df_test_rd * beta).iloc[0, 0]
         else:
             final_pred = df_test_rd.dot(beta)
     else:
@@ -1505,8 +1504,17 @@ def BMA_Predictive_Likelihood_exh(df_train, df_test, l_share):
 
     # model posterior probabilities
     predictive_lik_sum = np.sum(predictive_lik)
-    posterior_prob = predictive_lik / predictive_lik_sum
 
+    if ~np.isfinite(predictive_lik_sum):
+        # there might appear some inf predictive likelihoods due to overflow
+        finite_ind = np.isfinite(predictive_lik)
+        predictive_lik = predictive_lik[finite_ind]
+        predictive_lik_sum = np.sum(predictive_lik)
+        oos_fcts = oos_fcts[np.transpose(finite_ind)]
+
+    # calculate posterior probabilities
+    posterior_prob = predictive_lik / predictive_lik_sum
+    # obtained out-of-sample predictions using posterior probs. as weights
     pred = np.squeeze(np.dot(oos_fcts, posterior_prob), axis=1)
 
     df_pred = pd.DataFrame(
@@ -1753,7 +1761,7 @@ def EP_NN(df_train, df_test, sigma, gen, n):
     return df_pred
 
 
-def Bagging(df_train, df_test, B):
+def Bagging(df_train, df_test, B, threshold):
     """
     The Bagging  (Bootstrap aggregation) forecast combination method with
     a t-test pre-test for variable selection. B overlapping random blocks are
@@ -1860,7 +1868,7 @@ def Bagging(df_train, df_test, B):
 
     for i in range(B):
 
-        sel_ind = np.squeeze(t_stats_abs[i] > 1.96)
+        sel_ind = np.squeeze(t_stats_abs[i] > threshold)
         # continue if there is atleas one predictor
         if np.sum(sel_ind) > 0:
 
@@ -2385,10 +2393,10 @@ def cAPM_Q_learning(df_train, df_test, MinRPT, MaxRPT_r1, MaxRPT, alpha,
             denum[denum == 0] = 1e-10
             experience = np.clip(num/denum, a_min=0, a_max=1)
             delta_mat += alpha*(experience[:, :, np.newaxis]*state_mat - delta_mat)
-            
+
        ############################
        # training the market - END#
-       ############################   
+       ############################
 
     # using the market for the out-of-sample predictions
     pred = np.full(T_test, np.nan, dtype=float)
