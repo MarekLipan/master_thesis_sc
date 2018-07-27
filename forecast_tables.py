@@ -184,6 +184,11 @@ def create_acc_table(df, w, proc, df_name):
         load_path = data_path + "Multiproc/MP_" + df_name + ".pkl"
         fcts_table = pd.read_pickle(load_path).transpose()
 
+        # replace the nan's created in the by rare overflows in the BMA (Pred.)
+        # in few of the w=500 samples (in forecasting volatility application)
+        if fcts_table.isnull().values.any():
+            fcts_table = fcts_table.fillna(0)
+
     # compute and store accuracy measures for the combined forecasts
     for i in range(C):
 

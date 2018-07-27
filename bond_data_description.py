@@ -10,9 +10,10 @@ This script is used to create and export data descriptive charts and tables.
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import accuracy_measures as am
 from cycler import cycler
 from scipy import stats
-from pylatex import Table, Tabular
+from pylatex import Table, Tabular, MultiColumn, MultiRow
 from pylatex.utils import NoEscape
 from statsmodels.graphics.tsaplots import plot_acf
 from statsmodels.graphics.tsaplots import plot_pacf
@@ -392,8 +393,178 @@ a.legend(loc=1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
 # whole figure
 fig.autofmt_xdate()
 fig.savefig(fig_path + "bond_ind_fcts_22.pdf", bbox_inches='tight')
-# TABLE OF INDIVIDUAL FORECASTS
 
+# TABLE OF INDIVIDUAL FORECAST PERFORMANCE
+# prepare individual performance tables
+# TU
+ind_TU_perf = pd.DataFrame(data=np.full((12, 9), 0, dtype=float),
+                             columns=["RMSE", "MAE", "MAPE"]*3,
+                             index=list(ind_fcts_1_TU)[1:])
+for i in range(1, 13):
+    # w = 1
+    real_values = ind_fcts_1_TU.iloc[:, 0].values
+    errors = real_values - ind_fcts_1_TU.iloc[:, i].values
+    ind_TU_perf.iloc[i-1, :3] = np.array([
+                am.RMSE(errors)*10000,
+                am.MAE(errors)*10000,
+                am.MAPE(errors, real_values)
+                ])
+    # w = 5
+    real_values = ind_fcts_5_TU.iloc[:, 0].values
+    errors = real_values - ind_fcts_5_TU.iloc[:, i].values
+    ind_TU_perf.iloc[i-1, 3:6] = np.array([
+                am.RMSE(errors)*10000,
+                am.MAE(errors)*10000,
+                am.MAPE(errors, real_values)
+                ])
+    # w = 22
+    real_values = ind_fcts_22_TU.iloc[:, 0].values
+    errors = real_values - ind_fcts_22_TU.iloc[:, i].values
+    ind_TU_perf.iloc[i-1, 6:9] = np.array([
+                am.RMSE(errors)*10000,
+                am.MAE(errors)*10000,
+                am.MAPE(errors, real_values)
+                ])
+# FV
+ind_FV_perf = pd.DataFrame(data=np.full((12, 9), 0, dtype=float),
+                             columns=["RMSE", "MAE", "MAPE"]*3,
+                             index=list(ind_fcts_1_FV)[1:])
+for i in range(1, 13):
+    # w = 1
+    real_values = ind_fcts_1_FV.iloc[:, 0].values
+    errors = real_values - ind_fcts_1_FV.iloc[:, i].values
+    ind_FV_perf.iloc[i-1, :3] = np.array([
+                am.RMSE(errors)*10000,
+                am.MAE(errors)*10000,
+                am.MAPE(errors, real_values)
+                ])
+    # w = 5
+    real_values = ind_fcts_5_FV.iloc[:, 0].values
+    errors = real_values - ind_fcts_5_FV.iloc[:, i].values
+    ind_FV_perf.iloc[i-1, 3:6] = np.array([
+                am.RMSE(errors)*10000,
+                am.MAE(errors)*10000,
+                am.MAPE(errors, real_values)
+                ])
+    # w = 22
+    real_values = ind_fcts_22_FV.iloc[:, 0].values
+    errors = real_values - ind_fcts_22_FV.iloc[:, i].values
+    ind_FV_perf.iloc[i-1, 6:9] = np.array([
+                am.RMSE(errors)*10000,
+                am.MAE(errors)*10000,
+                am.MAPE(errors, real_values)
+                ])
+# TY
+ind_TY_perf = pd.DataFrame(data=np.full((12, 9), 0, dtype=float),
+                             columns=["RMSE", "MAE", "MAPE"]*3,
+                             index=list(ind_fcts_1_TY)[1:])
+for i in range(1, 13):
+    # w = 1
+    real_values = ind_fcts_1_TY.iloc[:, 0].values
+    errors = real_values - ind_fcts_1_TY.iloc[:, i].values
+    ind_TY_perf.iloc[i-1, :3] = np.array([
+                am.RMSE(errors)*10000,
+                am.MAE(errors)*10000,
+                am.MAPE(errors, real_values)
+                ])
+    # w = 5
+    real_values = ind_fcts_5_TY.iloc[:, 0].values
+    errors = real_values - ind_fcts_5_TY.iloc[:, i].values
+    ind_TY_perf.iloc[i-1, 3:6] = np.array([
+                am.RMSE(errors)*10000,
+                am.MAE(errors)*10000,
+                am.MAPE(errors, real_values)
+                ])
+    # w = 22
+    real_values = ind_fcts_22_TY.iloc[:, 0].values
+    errors = real_values - ind_fcts_22_TY.iloc[:, i].values
+    ind_TY_perf.iloc[i-1, 6:9] = np.array([
+                am.RMSE(errors)*10000,
+                am.MAE(errors)*10000,
+                am.MAPE(errors, real_values)
+                ])
+# US
+ind_US_perf = pd.DataFrame(data=np.full((12, 9), 0, dtype=float),
+                             columns=["RMSE", "MAE", "MAPE"]*3,
+                             index=list(ind_fcts_1_US)[1:])
+for i in range(1, 13):
+    # w = 1
+    real_values = ind_fcts_1_US.iloc[:, 0].values
+    errors = real_values - ind_fcts_1_US.iloc[:, i].values
+    ind_US_perf.iloc[i-1, :3] = np.array([
+                am.RMSE(errors)*10000,
+                am.MAE(errors)*10000,
+                am.MAPE(errors, real_values)
+                ])
+    # w = 5
+    real_values = ind_fcts_5_US.iloc[:, 0].values
+    errors = real_values - ind_fcts_5_US.iloc[:, i].values
+    ind_US_perf.iloc[i-1, 3:6] = np.array([
+                am.RMSE(errors)*10000,
+                am.MAE(errors)*10000,
+                am.MAPE(errors, real_values)
+                ])
+    # w = 22
+    real_values = ind_fcts_22_US.iloc[:, 0].values
+    errors = real_values - ind_fcts_22_US.iloc[:, i].values
+    ind_US_perf.iloc[i-1, 6:9] = np.array([
+                am.RMSE(errors)*10000,
+                am.MAE(errors)*10000,
+                am.MAPE(errors, real_values)
+                ])
+
+# print the table
+# create table object
+tabl = Table()
+tabl.add_caption("Forecast performance (measured in terms of RMSE, MAE and MAPE) of indindividual volatility models in h-steps-ahead forecasting of the realized volatility of U.S. Treasury futures log-returns")
+tabl.append(NoEscape('\label{tab: bond_ind_perf}'))
+# create tabular object
+tabr = Tabular(table_spec="c|l|ccc|ccc|ccc")
+tabr.add_hline()
+tabr.add_hline()
+# header row
+
+tabr.add_row((MultiRow(2, data="Future"), MultiRow(2, data="Volatility Model"),
+              MultiColumn(3, align='c|', data="h = 1"),
+              MultiColumn(3, align='c|', data="h = 5"),
+              MultiColumn(3, align='c', data="h = 22")))
+tabr.add_hline(start=3, end=11, cmidruleoption="lr")
+tabr.add_row([""]*2 + ["RMSE", "MAE", "MAPE"]*3)
+tabr.add_hline()
+# fill in the rows of tabular
+tabr.add_row([MultiRow(12, data="TU (2 Year)")] + [ind_TU_perf.index[0]] + [
+            "{:.2f}".format(item) for item in ind_TU_perf.iloc[0, :]])
+for i in range(1, 12):
+    tabr.add_row([""] + [ind_TU_perf.index[i]] + [
+            "{:.2f}".format(item) for item in ind_TU_perf.iloc[i, :]])
+
+tabr.add_hline()
+tabr.add_row([MultiRow(12, data="FV (5 Year)")] + [ind_FV_perf.index[0]] + [
+            "{:.2f}".format(item) for item in ind_FV_perf.iloc[0, :]])
+for i in range(1, 12):
+    tabr.add_row([""] + [ind_FV_perf.index[i]] + [
+            "{:.2f}".format(item) for item in ind_FV_perf.iloc[i, :]])
+
+tabr.add_hline()
+tabr.add_row([MultiRow(12, data="TY (10 Year)")] + [ind_TY_perf.index[0]] + [
+            "{:.2f}".format(item) for item in ind_TY_perf.iloc[0, :]])
+for i in range(1, 12):
+    tabr.add_row([""] + [ind_TY_perf.index[i]] + [
+            "{:.2f}".format(item) for item in ind_TY_perf.iloc[i, :]])
+
+tabr.add_hline()
+tabr.add_row([MultiRow(12, data="US (30 Year)")] + [ind_US_perf.index[0]] + [
+            "{:.2f}".format(item) for item in ind_US_perf.iloc[0, :]])
+for i in range(1, 12):
+    tabr.add_row([""] + [ind_US_perf.index[i]] + [
+            "{:.2f}".format(item) for item in ind_US_perf.iloc[i, :]])
+
+# end of table
+tabr.add_hline()
+# add tabular to table
+tabl.append(tabr)
+# export the table
+tabl.generate_tex(tab_path + "bond_ind_perf")
 
 ###############
 # END OF FILE #
