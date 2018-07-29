@@ -135,7 +135,6 @@ for i in range(9):
             "{:.2f}".format(item) for item in spf_desc_stat.iloc[i, :]])
 # end of table
 tabr.add_hline()
-tabr.add_hline()
 # add tabular to table
 tabl.append(tabr)
 # export the table

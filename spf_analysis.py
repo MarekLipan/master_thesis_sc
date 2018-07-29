@@ -12,8 +12,12 @@ import pandas as pd
 import forecast_tables as ft
 import random
 import combination_methods as cm
+import accuracy_measures as am
 from pylatex import Table, Tabular, MultiColumn, MultiRow, Tabu
 from pylatex.utils import NoEscape
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from cycler import cycler
 
 # set the seed for replicability of results
 random.seed(444)
@@ -270,7 +274,152 @@ for w in [25, 35, 45]:
     tabl.generate_tex(tab_path + "spf_comb_perf_"+str(w))
 
 
-# leave the table
+# FORECAST COMBINATION FIGURES
+comb_methods = ['ECB', 'Equal Weights', 'Bates-Granger (1)', 'Bates-Granger (2)',
+       'Bates-Granger (3)', 'Bates-Granger (4)', 'Bates-Granger (5)',
+       'Granger-Ramanathan (1)', 'Granger-Ramanathan (2)',
+       'Granger-Ramanathan (3)', 'AFTER', 'Median Forecast',
+       'Trimmed Mean Forecast', 'PEW', 'Principal Component Forecast',
+       'Principal Component Forecast (AIC)',
+       'Principal Component Forecast (BIC)', 'Empirical Bayes Estimator',
+       'Kappa-Shrinkage', 'Two-Step Egalitarian LASSO',
+       'BMA (Marginal Likelihood)', 'BMA (Predictive Likelihood)', 'ANN',
+       'EP-NN', 'Bagging', 'Componentwise Boosting', 'AdaBoost',
+       'c-APM (Constant)', 'c-APM (Q-learning)', 'Market for Kernels']
 
+for w in [25, 35, 45]:
+    # load accuracy tables
+    acc_table_RGDP_1Y = ft.create_acc_table(df=spf_bal_RGDP_1Y, w=w,
+                                            proc="multiple",
+                                            df_name="spf_bal_RGDP_1Y_"+str(w))
 
+    acc_table_RGDP_2Y = ft.create_acc_table(df=spf_bal_RGDP_2Y, w=w,
+                                            proc="multiple",
+                                            df_name="spf_bal_RGDP_2Y_"+str(w))
+
+    acc_table_HICP_1Y = ft.create_acc_table(df=spf_bal_HICP_1Y, w=w,
+                                            proc="multiple",
+                                            df_name="spf_bal_HICP_1Y_"+str(w))
+    acc_table_HICP_2Y = ft.create_acc_table(df=spf_bal_HICP_2Y, w=w,
+                                            proc="multiple",
+                                            df_name="spf_bal_HICP_2Y_"+str(w))
+    acc_table_UNEM_1Y = ft.create_acc_table(df=spf_bal_UNEM_1Y, w=w,
+                                            proc="multiple",
+                                            df_name="spf_bal_UNEM_1Y_"+str(w))
+    acc_table_UNEM_2Y = ft.create_acc_table(df=spf_bal_UNEM_2Y, w=w,
+                                            proc="multiple",
+                                            df_name="spf_bal_UNEM_2Y_"+str(w))
+    # load all the data
+    data_path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
+    # RGDP 1Y
+    spf_comb_RGDP_1Y = pd.read_pickle(data_path + "Multiproc/MP_" + "spf_bal_RGDP_1Y_" + str(w) + ".pkl")
+    spf_comb_RGDP_1Y.insert(0, "ECB", spf_bal_RGDP_1Y.values[(-spf_comb_RGDP_1Y.shape[0]):, 0])
+    spf_comb_RGDP_1Y.columns = comb_methods
+    spf_comb_RGDP_1Y.index = spf_bal_RGDP_1Y.index[(-spf_comb_RGDP_1Y.shape[0]):]
+    spf_comb_RGDP_1Y = spf_comb_RGDP_1Y.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_RGDP_1Y))+1)]
+
+    # RGDP 2Y
+    spf_comb_RGDP_2Y = pd.read_pickle(data_path + "Multiproc/MP_" + "spf_bal_RGDP_2Y_" + str(w) + ".pkl")
+    spf_comb_RGDP_2Y.insert(0, "ECB", spf_bal_RGDP_2Y.values[(-spf_comb_RGDP_2Y.shape[0]):, 0])
+    spf_comb_RGDP_2Y.columns = comb_methods
+    spf_comb_RGDP_2Y.index = spf_bal_RGDP_2Y.index[(-spf_comb_RGDP_2Y.shape[0]):]
+    spf_comb_RGDP_2Y = spf_comb_RGDP_2Y.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_RGDP_2Y))+1)]
+
+    # HICP 1Y
+    spf_comb_HICP_1Y = pd.read_pickle(data_path + "Multiproc/MP_" + "spf_bal_HICP_1Y_" + str(w) + ".pkl")
+    spf_comb_HICP_1Y.insert(0, "ECB", spf_bal_HICP_1Y.values[(-spf_comb_HICP_1Y.shape[0]):, 0])
+    spf_comb_HICP_1Y.columns = comb_methods
+    spf_comb_HICP_1Y.index = spf_bal_HICP_1Y.index[(-spf_comb_HICP_1Y.shape[0]):]
+    spf_comb_HICP_1Y = spf_comb_HICP_1Y.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_HICP_1Y))+1)]
+
+    # HICP 2Y
+    spf_comb_HICP_2Y = pd.read_pickle(data_path + "Multiproc/MP_" + "spf_bal_HICP_2Y_" + str(w) + ".pkl")
+    spf_comb_HICP_2Y.insert(0, "ECB", spf_bal_HICP_2Y.values[(-spf_comb_HICP_2Y.shape[0]):, 0])
+    spf_comb_HICP_2Y.columns = comb_methods
+    spf_comb_HICP_2Y.index = spf_bal_HICP_2Y.index[(-spf_comb_HICP_2Y.shape[0]):]
+    spf_comb_HICP_2Y = spf_comb_HICP_2Y.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_HICP_2Y))+1)]
+
+    # UNEM 1Y
+    spf_comb_UNEM_1Y = pd.read_pickle(data_path + "Multiproc/MP_" + "spf_bal_UNEM_1Y_" + str(w) + ".pkl")
+    spf_comb_UNEM_1Y.insert(0, "ECB", spf_bal_UNEM_1Y.values[(-spf_comb_UNEM_1Y.shape[0]):, 0])
+    spf_comb_UNEM_1Y.columns = comb_methods
+    spf_comb_UNEM_1Y.index = spf_bal_UNEM_1Y.index[(-spf_comb_UNEM_1Y.shape[0]):]
+    spf_comb_UNEM_1Y = spf_comb_UNEM_1Y.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_UNEM_1Y))+1)]
+
+    # UNEM 2Y
+    spf_comb_UNEM_2Y = pd.read_pickle(data_path + "Multiproc/MP_" + "spf_bal_UNEM_2Y_" + str(w) + ".pkl")
+    spf_comb_UNEM_2Y.insert(0, "ECB", spf_bal_UNEM_2Y.values[(-spf_comb_UNEM_2Y.shape[0]):, 0])
+    spf_comb_UNEM_2Y.columns = comb_methods
+    spf_comb_UNEM_2Y.index = spf_bal_UNEM_2Y.index[(-spf_comb_UNEM_2Y.shape[0]):]
+    spf_comb_UNEM_2Y = spf_comb_UNEM_2Y.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_UNEM_2Y))+1)]
+
+    # figure
+    fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(14, 15))
+    # cycles
+    col_cyc = cycler('color', ['#e41a1c', '#377eb8', '#984ea3', '#ff7f00', '#a65628', '#f781bf', '#4daf4a'])
+    mar_cyc = cycler('marker', ['.']+5*['']+['.'])
+    # RGDP (1Y)
+    a = axes[0, 0]
+    a.set_prop_cycle(col_cyc+mar_cyc)
+    spf_comb_RGDP_1Y.plot(ax=a, linewidth=1, alpha=0.7)
+    a.set_title('Real GDP Growth (1 Year Horizon)')
+    a.set_xlabel('Time')
+    a.grid(color='k', linestyle=':', linewidth=0.5)
+    #a.set_ylim([-9, 6])
+    a.legend(loc = 4, ncol=2, prop={'size': 7}, framealpha=1, fancybox=True)
+
+    # RGDP (2Y)
+    a = axes[0, 1]
+    a.set_prop_cycle(col_cyc+mar_cyc)
+    spf_comb_RGDP_2Y.plot(ax=a, linewidth=1, alpha=0.7)
+    a.set_title('Real GDP Growth (2 Year Horizon)')
+    a.set_xlabel('Time')
+    a.grid(color='k', linestyle=':', linewidth=0.5)
+    #a.set_ylim([-9, 6])
+    a.legend(loc = 4, ncol=2, prop={'size': 7}, framealpha=1, fancybox=True)
+
+    # HICP (1Y)
+    a = axes[1, 0]
+    a.set_prop_cycle(col_cyc+mar_cyc)
+    spf_comb_HICP_1Y.plot(ax=a, linewidth=1, alpha=0.7)
+    a.set_title('Harmonised Inflation (1 Year Horizon)')
+    a.set_xlabel('Time')
+    a.grid(color='k', linestyle=':', linewidth=0.5)
+    a.legend(loc = 1, ncol=2, prop={'size': 7}, framealpha=1, fancybox=True)
+
+    # HICP (2Y)
+    a = axes[1, 1]
+    a.set_prop_cycle(col_cyc+mar_cyc)
+    spf_comb_HICP_2Y.plot(ax=a, linewidth=1, alpha=0.7)
+    a.set_title('Harmonised Inflation (2 Year Horizon)')
+    a.set_xlabel('Time')
+    a.grid(color='k', linestyle=':', linewidth=0.5)
+    a.legend(loc = 3, ncol=2, prop={'size': 7}, framealpha=1, fancybox=True)
+
+    # UNEM (1Y)
+    a = axes[2, 0]
+    a.set_prop_cycle(col_cyc+mar_cyc)
+    spf_comb_UNEM_1Y.plot(ax=a, linewidth=1, alpha=0.7)
+    a.set_title('Unemployment Rate (1 Year Horizon)')
+    a.set_xlabel('Time')
+    a.grid(color='k', linestyle=':', linewidth=0.5)
+    a.legend(loc = 4, ncol=2, prop={'size': 7}, framealpha=1, fancybox=True)
+
+    # UNEM (2Y)
+    a = axes[2, 1]
+    a.set_prop_cycle(col_cyc+mar_cyc)
+    spf_comb_UNEM_2Y.plot(ax=a, linewidth=1, alpha=0.7)
+    a.set_title('Unemployment Rate (2 Year Horizon)')
+    a.set_xlabel('Time')
+    a.grid(color='k', linestyle=':', linewidth=0.5)
+    a.legend(loc = 4, ncol=2, prop={'size': 7}, framealpha=1, fancybox=True)
+
+    # whole figure
+    fig.autofmt_xdate()
+    fig.savefig(fig_path + "spf_comb_fcts_"+str(w)+".pdf", bbox_inches='tight')
+
+#############
+# RANK TABLE#
+#############
+acc_table = acc_table_RGDP_1Y
 # END OF FILE

@@ -12,9 +12,13 @@ import pandas as pd
 import forecast_tables as ft
 import random
 import combination_methods as cm
+import accuracy_measures as am
 import time
 from pylatex import Table, Tabular, MultiColumn, MultiRow
 from pylatex.utils import NoEscape
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from cycler import cycler
 
 # set the seed for replicability of results
 random.seed(444)
@@ -641,5 +645,514 @@ tabr.add_hline()
 tabl.append(tabr)
 # export the table
 tabl.generate_tex(tab_path + "bond_comb_US")
+
+###############################
+# FORECAST COMBINATION FIGURES#
+###############################
+comb_methods = ['RVOL', 'Equal Weights', 'Bates-Granger (1)', 'Bates-Granger (2)',
+       'Bates-Granger (3)', 'Bates-Granger (4)', 'Bates-Granger (5)',
+       'Granger-Ramanathan (1)', 'Granger-Ramanathan (2)',
+       'Granger-Ramanathan (3)', 'AFTER', 'Median Forecast',
+       'Trimmed Mean Forecast', 'PEW', 'Principal Component Forecast',
+       'Principal Component Forecast (AIC)',
+       'Principal Component Forecast (BIC)', 'Empirical Bayes Estimator',
+       'Kappa-Shrinkage', 'Two-Step Egalitarian LASSO',
+       'BMA (Marginal Likelihood)', 'BMA (Predictive Likelihood)', 'ANN',
+       'EP-NN', 'Bagging', 'Componentwise Boosting', 'AdaBoost',
+       'c-APM (Constant)', 'c-APM (Q-learning)', 'Market for Kernels']
+data_path = "C:/Users/Marek/Dropbox/Master_Thesis/Data/"
+
+# TU (2 Year)
+# load accuracy tables
+acc_table_1_100 = ft.create_acc_table(df=ind_fcts_1_TU, w=100,proc="multiple",df_name="ind_fcts_1_TU_"+str(100))
+acc_table_1_500 = ft.create_acc_table(df=ind_fcts_1_TU, w=500,proc="multiple",df_name="ind_fcts_1_TU_"+str(500))
+
+acc_table_5_100 = ft.create_acc_table(df=ind_fcts_5_TU, w=100,proc="multiple",df_name="ind_fcts_5_TU_"+str(100))
+acc_table_5_500 = ft.create_acc_table(df=ind_fcts_5_TU, w=500,proc="multiple",df_name="ind_fcts_5_TU_"+str(500))
+
+acc_table_22_100 = ft.create_acc_table(df=ind_fcts_22_TU, w=100,proc="multiple",df_name="ind_fcts_22_TU_"+str(100))
+acc_table_22_500 = ft.create_acc_table(df=ind_fcts_22_TU, w=500,proc="multiple",df_name="ind_fcts_22_TU_"+str(500))
+
+# prepare datasets for plotting
+bond_comb_1_100 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(1)+"_TU_"+str(100) + ".pkl")
+bond_comb_1_100.insert(0, "RVOL", ind_fcts_1_TU.values[(-bond_comb_1_100.shape[0]):, 0])
+bond_comb_1_100.columns = comb_methods
+bond_comb_1_100.index = ind_fcts_1_TU.index[(-bond_comb_1_100.shape[0]):]
+bond_comb_1_100 = bond_comb_1_100.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_1_100))+1)]
+bond_comb_1_100 = bond_comb_1_100.loc[bond_comb_1_100.index >= "2009-08-12 00:00:00"]
+
+bond_comb_1_500 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(1)+"_TU_"+str(500) + ".pkl")
+bond_comb_1_500.insert(0, "RVOL", ind_fcts_1_TU.values[(-bond_comb_1_500.shape[0]):, 0])
+bond_comb_1_500.columns = comb_methods
+bond_comb_1_500.index = ind_fcts_1_TU.index[(-bond_comb_1_500.shape[0]):]
+bond_comb_1_500 = bond_comb_1_500.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_1_500))+1)]
+bond_comb_1_500 = bond_comb_1_500.loc[bond_comb_1_500.index >= "2009-08-12 00:00:00"]
+
+bond_comb_5_100 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(5)+"_TU_"+str(100) + ".pkl")
+bond_comb_5_100.insert(0, "RVOL", ind_fcts_5_TU.values[(-bond_comb_5_100.shape[0]):, 0])
+bond_comb_5_100.columns = comb_methods
+bond_comb_5_100.index = ind_fcts_5_TU.index[(-bond_comb_5_100.shape[0]):]
+bond_comb_5_100 = bond_comb_5_100.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_5_100))+1)]
+bond_comb_5_100 = bond_comb_5_100.loc[bond_comb_5_100.index >= "2009-08-12 00:00:00"]
+
+bond_comb_5_500 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(5)+"_TU_"+str(500) + ".pkl")
+bond_comb_5_500.insert(0, "RVOL", ind_fcts_5_TU.values[(-bond_comb_5_500.shape[0]):, 0])
+bond_comb_5_500.columns = comb_methods
+bond_comb_5_500.index = ind_fcts_5_TU.index[(-bond_comb_5_500.shape[0]):]
+bond_comb_5_500 = bond_comb_5_500.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_5_500))+1)]
+bond_comb_5_500 = bond_comb_5_500.loc[bond_comb_5_500.index >= "2009-08-12 00:00:00"]
+
+bond_comb_22_100 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(22)+"_TU_"+str(100) + ".pkl")
+bond_comb_22_100.insert(0, "RVOL", ind_fcts_22_TU.values[(-bond_comb_22_100.shape[0]):, 0])
+bond_comb_22_100.columns = comb_methods
+bond_comb_22_100.index = ind_fcts_22_TU.index[(-bond_comb_22_100.shape[0]):]
+bond_comb_22_100 = bond_comb_22_100.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_22_100))+1)]
+bond_comb_22_100 = bond_comb_22_100.loc[bond_comb_22_100.index >= "2009-08-12 00:00:00"]
+
+bond_comb_22_500 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(22)+"_TU_"+str(500) + ".pkl")
+bond_comb_22_500.insert(0, "RVOL", ind_fcts_22_TU.values[(-bond_comb_22_500.shape[0]):, 0])
+bond_comb_22_500.columns = comb_methods
+bond_comb_22_500.index = ind_fcts_22_TU.index[(-bond_comb_22_500.shape[0]):]
+bond_comb_22_500 = bond_comb_22_500.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_22_500))+1)]
+bond_comb_22_500 = bond_comb_22_500.loc[bond_comb_22_500.index >= "2009-08-12 00:00:00"]
+
+
+# figure
+fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(14, 15))
+# cycles
+col_cyc = cycler('color', ['#e41a1c', '#377eb8', '#984ea3', '#ff7f00', '#a65628', '#f781bf', '#4daf4a'])
+# 1_100
+a = axes[0, 0]
+a.set_prop_cycle(col_cyc)
+bond_comb_1_100.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_title('w = 100')
+a.set_xlabel('Time')
+a.set_ylabel('h = 1', size='large')
+a.set_ylim([0.0001, 0.0026])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 1_500
+a = axes[0, 1]
+a.set_prop_cycle(col_cyc)
+bond_comb_1_500.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_title('w = 500')
+a.set_xlabel('Time')
+a.set_ylim([0.0001, 0.0026])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 5_100
+a = axes[1, 0]
+a.set_prop_cycle(col_cyc)
+bond_comb_5_100.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylabel('h = 5', size='large')
+a.set_ylim([0.0001, 0.0026])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 5_500
+a = axes[1, 1]
+a.set_prop_cycle(col_cyc)
+bond_comb_5_500.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylim([0.0001, 0.0026])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 22_100
+a = axes[2, 0]
+a.set_prop_cycle(col_cyc)
+bond_comb_22_100.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylabel('h = 22', size='large')
+a.set_ylim([0.0001, 0.0026])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 22_500
+a = axes[2, 1]
+a.set_prop_cycle(col_cyc)
+bond_comb_22_500.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylim([0.0001, 0.0026])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# whole figure
+fig.autofmt_xdate()
+fig.tight_layout()
+fig.savefig(fig_path + "bond_comb_TU.pdf", bbox_inches='tight')
+
+
+# FV (5 Year)
+# load accuracy tables
+acc_table_1_100 = ft.create_acc_table(df=ind_fcts_1_FV, w=100,proc="multiple",df_name="ind_fcts_1_FV_"+str(100))
+acc_table_1_500 = ft.create_acc_table(df=ind_fcts_1_FV, w=500,proc="multiple",df_name="ind_fcts_1_FV_"+str(500))
+
+acc_table_5_100 = ft.create_acc_table(df=ind_fcts_5_FV, w=100,proc="multiple",df_name="ind_fcts_5_FV_"+str(100))
+acc_table_5_500 = ft.create_acc_table(df=ind_fcts_5_FV, w=500,proc="multiple",df_name="ind_fcts_5_FV_"+str(500))
+
+acc_table_22_100 = ft.create_acc_table(df=ind_fcts_22_FV, w=100,proc="multiple",df_name="ind_fcts_22_FV_"+str(100))
+acc_table_22_500 = ft.create_acc_table(df=ind_fcts_22_FV, w=500,proc="multiple",df_name="ind_fcts_22_FV_"+str(500))
+
+# prepare datasets for plotting
+bond_comb_1_100 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(1)+"_FV_"+str(100) + ".pkl")
+bond_comb_1_100.insert(0, "RVOL", ind_fcts_1_FV.values[(-bond_comb_1_100.shape[0]):, 0])
+bond_comb_1_100.columns = comb_methods
+bond_comb_1_100.index = ind_fcts_1_FV.index[(-bond_comb_1_100.shape[0]):]
+bond_comb_1_100 = bond_comb_1_100.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_1_100))+1)]
+bond_comb_1_100 = bond_comb_1_100.loc[bond_comb_1_100.index >= "2009-08-12 00:00:00"]
+
+bond_comb_1_500 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(1)+"_FV_"+str(500) + ".pkl")
+bond_comb_1_500.insert(0, "RVOL", ind_fcts_1_FV.values[(-bond_comb_1_500.shape[0]):, 0])
+bond_comb_1_500.columns = comb_methods
+bond_comb_1_500.index = ind_fcts_1_FV.index[(-bond_comb_1_500.shape[0]):]
+bond_comb_1_500 = bond_comb_1_500.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_1_500))+1)]
+bond_comb_1_500 = bond_comb_1_500.loc[bond_comb_1_500.index >= "2009-08-12 00:00:00"]
+
+bond_comb_5_100 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(5)+"_FV_"+str(100) + ".pkl")
+bond_comb_5_100.insert(0, "RVOL", ind_fcts_5_FV.values[(-bond_comb_5_100.shape[0]):, 0])
+bond_comb_5_100.columns = comb_methods
+bond_comb_5_100.index = ind_fcts_5_FV.index[(-bond_comb_5_100.shape[0]):]
+bond_comb_5_100 = bond_comb_5_100.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_5_100))+1)]
+bond_comb_5_100 = bond_comb_5_100.loc[bond_comb_5_100.index >= "2009-08-12 00:00:00"]
+
+bond_comb_5_500 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(5)+"_FV_"+str(500) + ".pkl")
+bond_comb_5_500.insert(0, "RVOL", ind_fcts_5_FV.values[(-bond_comb_5_500.shape[0]):, 0])
+bond_comb_5_500.columns = comb_methods
+bond_comb_5_500.index = ind_fcts_5_FV.index[(-bond_comb_5_500.shape[0]):]
+bond_comb_5_500 = bond_comb_5_500.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_5_500))+1)]
+bond_comb_5_500 = bond_comb_5_500.loc[bond_comb_5_500.index >= "2009-08-12 00:00:00"]
+
+bond_comb_22_100 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(22)+"_FV_"+str(100) + ".pkl")
+bond_comb_22_100.insert(0, "RVOL", ind_fcts_22_FV.values[(-bond_comb_22_100.shape[0]):, 0])
+bond_comb_22_100.columns = comb_methods
+bond_comb_22_100.index = ind_fcts_22_FV.index[(-bond_comb_22_100.shape[0]):]
+bond_comb_22_100 = bond_comb_22_100.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_22_100))+1)]
+bond_comb_22_100 = bond_comb_22_100.loc[bond_comb_22_100.index >= "2009-08-12 00:00:00"]
+
+bond_comb_22_500 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(22)+"_FV_"+str(500) + ".pkl")
+bond_comb_22_500.insert(0, "RVOL", ind_fcts_22_FV.values[(-bond_comb_22_500.shape[0]):, 0])
+bond_comb_22_500.columns = comb_methods
+bond_comb_22_500.index = ind_fcts_22_FV.index[(-bond_comb_22_500.shape[0]):]
+bond_comb_22_500 = bond_comb_22_500.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_22_500))+1)]
+bond_comb_22_500 = bond_comb_22_500.loc[bond_comb_22_500.index >= "2009-08-12 00:00:00"]
+
+
+# figure
+fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(14, 15))
+# cycles
+col_cyc = cycler('color', ['#e41a1c', '#377eb8', '#984ea3', '#ff7f00', '#a65628', '#f781bf', '#4daf4a'])
+# 1_100
+a = axes[0, 0]
+a.set_prop_cycle(col_cyc)
+bond_comb_1_100.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_title('w = 100')
+a.set_xlabel('Time')
+a.set_ylabel('h = 1', size='large')
+a.set_ylim([0.0001, 0.008])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 1_500
+a = axes[0, 1]
+a.set_prop_cycle(col_cyc)
+bond_comb_1_500.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_title('w = 500')
+a.set_xlabel('Time')
+a.set_ylim([0.0001, 0.008])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 5_100
+a = axes[1, 0]
+a.set_prop_cycle(col_cyc)
+bond_comb_5_100.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylabel('h = 5', size='large')
+a.set_ylim([0.0001, 0.008])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 5_500
+a = axes[1, 1]
+a.set_prop_cycle(col_cyc)
+bond_comb_5_500.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylim([0.0001, 0.008])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 22_100
+a = axes[2, 0]
+a.set_prop_cycle(col_cyc)
+bond_comb_22_100.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylabel('h = 22', size='large')
+a.set_ylim([0.0001, 0.008])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 22_500
+a = axes[2, 1]
+a.set_prop_cycle(col_cyc)
+bond_comb_22_500.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylim([0.0001, 0.008])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# whole figure
+fig.autofmt_xdate()
+fig.tight_layout()
+fig.savefig(fig_path + "bond_comb_FV.pdf", bbox_inches='tight')
+
+# TY (10 Year)
+# load accuracy tables
+acc_table_1_100 = ft.create_acc_table(df=ind_fcts_1_TY, w=100,proc="multiple",df_name="ind_fcts_1_TY_"+str(100))
+acc_table_1_500 = ft.create_acc_table(df=ind_fcts_1_TY, w=500,proc="multiple",df_name="ind_fcts_1_TY_"+str(500))
+
+acc_table_5_100 = ft.create_acc_table(df=ind_fcts_5_TY, w=100,proc="multiple",df_name="ind_fcts_5_TY_"+str(100))
+acc_table_5_500 = ft.create_acc_table(df=ind_fcts_5_TY, w=500,proc="multiple",df_name="ind_fcts_5_TY_"+str(500))
+
+acc_table_22_100 = ft.create_acc_table(df=ind_fcts_22_TY, w=100,proc="multiple",df_name="ind_fcts_22_TY_"+str(100))
+acc_table_22_500 = ft.create_acc_table(df=ind_fcts_22_TY, w=500,proc="multiple",df_name="ind_fcts_22_TY_"+str(500))
+
+# prepare datasets for plotting
+bond_comb_1_100 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(1)+"_TY_"+str(100) + ".pkl")
+bond_comb_1_100.insert(0, "RVOL", ind_fcts_1_TY.values[(-bond_comb_1_100.shape[0]):, 0])
+bond_comb_1_100.columns = comb_methods
+bond_comb_1_100.index = ind_fcts_1_TY.index[(-bond_comb_1_100.shape[0]):]
+bond_comb_1_100 = bond_comb_1_100.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_1_100))+1)]
+bond_comb_1_100 = bond_comb_1_100.loc[bond_comb_1_100.index >= "2009-08-12 00:00:00"]
+
+bond_comb_1_500 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(1)+"_TY_"+str(500) + ".pkl")
+bond_comb_1_500.insert(0, "RVOL", ind_fcts_1_TY.values[(-bond_comb_1_500.shape[0]):, 0])
+bond_comb_1_500.columns = comb_methods
+bond_comb_1_500.index = ind_fcts_1_TY.index[(-bond_comb_1_500.shape[0]):]
+bond_comb_1_500 = bond_comb_1_500.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_1_500))+1)]
+bond_comb_1_500 = bond_comb_1_500.loc[bond_comb_1_500.index >= "2009-08-12 00:00:00"]
+
+bond_comb_5_100 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(5)+"_TY_"+str(100) + ".pkl")
+bond_comb_5_100.insert(0, "RVOL", ind_fcts_5_TY.values[(-bond_comb_5_100.shape[0]):, 0])
+bond_comb_5_100.columns = comb_methods
+bond_comb_5_100.index = ind_fcts_5_TY.index[(-bond_comb_5_100.shape[0]):]
+bond_comb_5_100 = bond_comb_5_100.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_5_100))+1)]
+bond_comb_5_100 = bond_comb_5_100.loc[bond_comb_5_100.index >= "2009-08-12 00:00:00"]
+
+bond_comb_5_500 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(5)+"_TY_"+str(500) + ".pkl")
+bond_comb_5_500.insert(0, "RVOL", ind_fcts_5_TY.values[(-bond_comb_5_500.shape[0]):, 0])
+bond_comb_5_500.columns = comb_methods
+bond_comb_5_500.index = ind_fcts_5_TY.index[(-bond_comb_5_500.shape[0]):]
+bond_comb_5_500 = bond_comb_5_500.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_5_500))+1)]
+bond_comb_5_500 = bond_comb_5_500.loc[bond_comb_5_500.index >= "2009-08-12 00:00:00"]
+
+bond_comb_22_100 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(22)+"_TY_"+str(100) + ".pkl")
+bond_comb_22_100.insert(0, "RVOL", ind_fcts_22_TY.values[(-bond_comb_22_100.shape[0]):, 0])
+bond_comb_22_100.columns = comb_methods
+bond_comb_22_100.index = ind_fcts_22_TY.index[(-bond_comb_22_100.shape[0]):]
+bond_comb_22_100 = bond_comb_22_100.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_22_100))+1)]
+bond_comb_22_100 = bond_comb_22_100.loc[bond_comb_22_100.index >= "2009-08-12 00:00:00"]
+
+bond_comb_22_500 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(22)+"_TY_"+str(500) + ".pkl")
+bond_comb_22_500.insert(0, "RVOL", ind_fcts_22_TY.values[(-bond_comb_22_500.shape[0]):, 0])
+bond_comb_22_500.columns = comb_methods
+bond_comb_22_500.index = ind_fcts_22_TY.index[(-bond_comb_22_500.shape[0]):]
+bond_comb_22_500 = bond_comb_22_500.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_22_500))+1)]
+bond_comb_22_500 = bond_comb_22_500.loc[bond_comb_22_500.index >= "2009-08-12 00:00:00"]
+
+
+# figure
+fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(14, 15))
+# cycles
+col_cyc = cycler('color', ['#e41a1c', '#377eb8', '#984ea3', '#ff7f00', '#a65628', '#f781bf', '#4daf4a'])
+# 1_100
+a = axes[0, 0]
+a.set_prop_cycle(col_cyc)
+bond_comb_1_100.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_title('w = 100')
+a.set_xlabel('Time')
+a.set_ylabel('h = 1', size='large')
+a.set_ylim([0.0001, 0.014])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 1_500
+a = axes[0, 1]
+a.set_prop_cycle(col_cyc)
+bond_comb_1_500.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_title('w = 500')
+a.set_xlabel('Time')
+a.set_ylim([0.0001, 0.014])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 5_100
+a = axes[1, 0]
+a.set_prop_cycle(col_cyc)
+bond_comb_5_100.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylabel('h = 5', size='large')
+a.set_ylim([0.0001, 0.014])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 5_500
+a = axes[1, 1]
+a.set_prop_cycle(col_cyc)
+bond_comb_5_500.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylim([0.0001, 0.014])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 22_100
+a = axes[2, 0]
+a.set_prop_cycle(col_cyc)
+bond_comb_22_100.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylabel('h = 22', size='large')
+a.set_ylim([0.0001, 0.014])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 22_500
+a = axes[2, 1]
+a.set_prop_cycle(col_cyc)
+bond_comb_22_500.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylim([0.0001, 0.014])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# whole figure
+fig.autofmt_xdate()
+fig.tight_layout()
+fig.savefig(fig_path + "bond_comb_TY.pdf", bbox_inches='tight')
+
+# US (30 Year)
+# load accuracy tables
+acc_table_1_100 = ft.create_acc_table(df=ind_fcts_1_US, w=100,proc="multiple",df_name="ind_fcts_1_US_"+str(100))
+acc_table_1_500 = ft.create_acc_table(df=ind_fcts_1_US, w=500,proc="multiple",df_name="ind_fcts_1_US_"+str(500))
+
+acc_table_5_100 = ft.create_acc_table(df=ind_fcts_5_US, w=100,proc="multiple",df_name="ind_fcts_5_US_"+str(100))
+acc_table_5_500 = ft.create_acc_table(df=ind_fcts_5_US, w=500,proc="multiple",df_name="ind_fcts_5_US_"+str(500))
+
+acc_table_22_100 = ft.create_acc_table(df=ind_fcts_22_US, w=100,proc="multiple",df_name="ind_fcts_22_US_"+str(100))
+acc_table_22_500 = ft.create_acc_table(df=ind_fcts_22_US, w=500,proc="multiple",df_name="ind_fcts_22_US_"+str(500))
+
+# prepare datasets for plotting
+bond_comb_1_100 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(1)+"_US_"+str(100) + ".pkl")
+bond_comb_1_100.insert(0, "RVOL", ind_fcts_1_US.values[(-bond_comb_1_100.shape[0]):, 0])
+bond_comb_1_100.columns = comb_methods
+bond_comb_1_100.index = ind_fcts_1_US.index[(-bond_comb_1_100.shape[0]):]
+bond_comb_1_100 = bond_comb_1_100.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_1_100))+1)]
+bond_comb_1_100 = bond_comb_1_100.loc[bond_comb_1_100.index >= "2009-08-12 00:00:00"]
+
+bond_comb_1_500 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(1)+"_US_"+str(500) + ".pkl")
+bond_comb_1_500.insert(0, "RVOL", ind_fcts_1_US.values[(-bond_comb_1_500.shape[0]):, 0])
+bond_comb_1_500.columns = comb_methods
+bond_comb_1_500.index = ind_fcts_1_US.index[(-bond_comb_1_500.shape[0]):]
+bond_comb_1_500 = bond_comb_1_500.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_1_500))+1)]
+bond_comb_1_500 = bond_comb_1_500.loc[bond_comb_1_500.index >= "2009-08-12 00:00:00"]
+
+bond_comb_5_100 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(5)+"_US_"+str(100) + ".pkl")
+bond_comb_5_100.insert(0, "RVOL", ind_fcts_5_US.values[(-bond_comb_5_100.shape[0]):, 0])
+bond_comb_5_100.columns = comb_methods
+bond_comb_5_100.index = ind_fcts_5_US.index[(-bond_comb_5_100.shape[0]):]
+bond_comb_5_100 = bond_comb_5_100.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_5_100))+1)]
+bond_comb_5_100 = bond_comb_5_100.loc[bond_comb_5_100.index >= "2009-08-12 00:00:00"]
+
+bond_comb_5_500 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(5)+"_US_"+str(500) + ".pkl")
+bond_comb_5_500.insert(0, "RVOL", ind_fcts_5_US.values[(-bond_comb_5_500.shape[0]):, 0])
+bond_comb_5_500.columns = comb_methods
+bond_comb_5_500.index = ind_fcts_5_US.index[(-bond_comb_5_500.shape[0]):]
+bond_comb_5_500 = bond_comb_5_500.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_5_500))+1)]
+bond_comb_5_500 = bond_comb_5_500.loc[bond_comb_5_500.index >= "2009-08-12 00:00:00"]
+
+bond_comb_22_100 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(22)+"_US_"+str(100) + ".pkl")
+bond_comb_22_100.insert(0, "RVOL", ind_fcts_22_US.values[(-bond_comb_22_100.shape[0]):, 0])
+bond_comb_22_100.columns = comb_methods
+bond_comb_22_100.index = ind_fcts_22_US.index[(-bond_comb_22_100.shape[0]):]
+bond_comb_22_100 = bond_comb_22_100.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_22_100))+1)]
+bond_comb_22_100 = bond_comb_22_100.loc[bond_comb_22_100.index >= "2009-08-12 00:00:00"]
+
+bond_comb_22_500 = pd.read_pickle(data_path + "Multiproc/MP_" + "ind_fcts_"+str(22)+"_US_"+str(500) + ".pkl")
+bond_comb_22_500.insert(0, "RVOL", ind_fcts_22_US.values[(-bond_comb_22_500.shape[0]):, 0])
+bond_comb_22_500.columns = comb_methods
+bond_comb_22_500.index = ind_fcts_22_US.index[(-bond_comb_22_500.shape[0]):]
+bond_comb_22_500 = bond_comb_22_500.iloc[:, np.append(0, am.best_in_class(am.rank_methods(acc_table_22_500))+1)]
+bond_comb_22_500 = bond_comb_22_500.loc[bond_comb_22_500.index >= "2009-08-12 00:00:00"]
+
+
+# figure
+fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(14, 15))
+# cycles
+col_cyc = cycler('color', ['#e41a1c', '#377eb8', '#984ea3', '#ff7f00', '#a65628', '#f781bf', '#4daf4a'])
+# 1_100
+a = axes[0, 0]
+a.set_prop_cycle(col_cyc)
+bond_comb_1_100.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_title('w = 100')
+a.set_xlabel('Time')
+a.set_ylabel('h = 1', size='large')
+a.set_ylim([0.0023, 0.021])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 1_500
+a = axes[0, 1]
+a.set_prop_cycle(col_cyc)
+bond_comb_1_500.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_title('w = 500')
+a.set_xlabel('Time')
+a.set_ylim([0.0023, 0.021])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 5_100
+a = axes[1, 0]
+a.set_prop_cycle(col_cyc)
+bond_comb_5_100.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylabel('h = 5', size='large')
+a.set_ylim([0.0023, 0.021])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 5_500
+a = axes[1, 1]
+a.set_prop_cycle(col_cyc)
+bond_comb_5_500.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylim([0.0023, 0.021])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 22_100
+a = axes[2, 0]
+a.set_prop_cycle(col_cyc)
+bond_comb_22_100.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylabel('h = 22', size='large')
+a.set_ylim([0.0023, 0.021])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# 22_500
+a = axes[2, 1]
+a.set_prop_cycle(col_cyc)
+bond_comb_22_500.plot(ax=a, linewidth=0.5, alpha=0.7)
+a.set_xlabel('Time')
+a.set_ylim([0.0023, 0.021])
+a.grid(color='k', linestyle=':', linewidth=0.5)
+a.legend(loc = 1, ncol=2, prop={'size': 8}, framealpha=1, fancybox=True)
+
+# whole figure
+fig.autofmt_xdate()
+fig.tight_layout()
+fig.savefig(fig_path + "bond_comb_US.pdf", bbox_inches='tight')
 
 # END OF FILE

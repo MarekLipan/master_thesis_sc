@@ -1,7 +1,8 @@
 """
 MAIN SCRIPT
 
-This script is used to run the individual scripts.
+This script is used to load the already prepared and stored data, before other
+scripts can be run.
 
 """
 
